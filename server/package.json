@@ -1,0 +1,17 @@
+{
+  "name": "investment-trainer-server",
+  "version": "1.0.0",
+  "description": "Local market-data proxy server for the Investment Trainer paper-trading app",
+  "type": "module",
+  "private": true,
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "yahoo-finance2": "^4.0.0"
+  }
+}
