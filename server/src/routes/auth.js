@@ -6,11 +6,21 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// Cross-site cookies (frontend and backend on different domains in production)
+// require SameSite=None, which browsers only honor when Secure is also set.
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  sameSite: 'lax',
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: IS_PROD ? 'none' : 'lax',
+  secure: IS_PROD,
   maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+const CLEAR_COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: IS_PROD ? 'none' : 'lax',
+  secure: IS_PROD,
 };
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
@@ -29,19 +39,24 @@ router.post('/signup', async (req, res) => {
     return res.status(400).json({ error: 'Password must be at least 8 characters.' });
   }
 
-  if (findUserByUsername(username)) {
-    return res.status(409).json({ error: 'That username is already taken.' });
-  }
-  if (findUserByEmail(email)) {
-    return res.status(409).json({ error: 'An account with that email already exists.' });
-  }
+  try {
+    if (await findUserByUsername(username)) {
+      return res.status(409).json({ error: 'That username is already taken.' });
+    }
+    if (await findUserByEmail(email)) {
+      return res.status(409).json({ error: 'An account with that email already exists.' });
+    }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-  const user = createUser({ username, email, passwordHash });
+    const passwordHash = await bcrypt.hash(password, 12);
+    const user = await createUser({ username, email, passwordHash });
 
-  const token = signToken(user.id);
-  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
-  res.status(201).json({ user: toPublicUser(user) });
+    const token = signToken(user.id);
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+    res.status(201).json({ user: toPublicUser(user) });
+  } catch (err) {
+    console.error('signup error', err.message);
+    res.status(500).json({ error: 'Something went wrong creating your account.' });
+  }
 });
 
 router.post('/login', async (req, res) => {
@@ -50,29 +65,39 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
 
-  const user = findUserByUsername(username) || findUserByEmail(username);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid username or password.' });
-  }
+  try {
+    const user = (await findUserByUsername(username)) || (await findUserByEmail(username));
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
 
-  const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) {
-    return res.status(401).json({ error: 'Invalid username or password.' });
-  }
+    const valid = await bcrypt.compare(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid username or password.' });
+    }
 
-  const token = signToken(user.id);
-  res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
-  res.json({ user: toPublicUser(user) });
+    const token = signToken(user.id);
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+    res.json({ user: toPublicUser(user) });
+  } catch (err) {
+    console.error('login error', err.message);
+    res.status(500).json({ error: 'Something went wrong logging you in.' });
+  }
 });
 
 router.post('/logout', (_req, res) => {
-  res.clearCookie(COOKIE_NAME, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
+  res.clearCookie(COOKIE_NAME, CLEAR_COOKIE_OPTIONS);
   res.json({ ok: true });
 });
 
-router.get('/me', requireAuth, (req, res) => {
-  const user = findUserById(req.userId);
-  res.json({ user: toPublicUser(user) });
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await findUserById(req.userId);
+    res.json({ user: toPublicUser(user) });
+  } catch (err) {
+    console.error('me error', err.message);
+    res.status(500).json({ error: 'Something went wrong loading your account.' });
+  }
 });
 
 export default router;

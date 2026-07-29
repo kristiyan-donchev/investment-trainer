@@ -1,12 +1,12 @@
 {
   "name": "investment-trainer-server",
   "version": "1.0.0",
-  "description": "Local market-data proxy server for the Investment Trainer paper-trading app",
+  "description": "API server for the Investment Trainer paper-trading app: market-data proxy, auth, and per-user portfolio persistence",
   "type": "module",
   "private": true,
   "main": "src/index.js",
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=18.0.0"
   },
   "scripts": {
     "start": "node src/index.js",
@@ -19,6 +19,7 @@
     "dotenv": "^17.4.2",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.3",
+    "pg": "^8.22.0",
     "yahoo-finance2": "^4.0.0"
   }
 }

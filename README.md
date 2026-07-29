@@ -23,8 +23,11 @@ delayed market prices and **100% virtual money**.
 - Includes **plain-language explanations** (via hover/tap tooltips and an onboarding "Help" panel)
   for beginner terms like *market order*, *P&L*, *cost basis*, *diversification*, *ticker symbol*,
   and *volatility*.
-- **Persists per-account server-side** in a local SQLite database — each user's cash, holdings, and
+- **Persists per-account server-side** in a Postgres database — each user's cash, holdings, and
   transaction history are scoped to their account.
+- **Deployable**, not just local-only: the frontend and backend are split so you can host them on
+  separate services (e.g. Vercel + Render + a hosted Postgres) — see
+  [Deploying to production](#deploying-to-production).
 
 ## Accounts & auth
 
@@ -37,16 +40,19 @@ delayed market prices and **100% virtual money**.
   migration path from the old browser-`localStorage`-only version, so upgrading from an older copy
   of this app means starting fresh under a new account. That's expected and fine for a learning
   tool.
-- **Security caveats (read before relying on this for anything beyond local practice):**
-  - This is a **local, single-machine app**, not a hardened multi-tenant service. It has not had a
-    security audit and should not be exposed to the public internet as-is.
-  - There is **no email verification** and **no password reset flow** — if you forget your
-    password, there's no recovery path other than editing the SQLite database directly.
+- **Security caveats (read before relying on this for anything beyond personal/hobby use):**
+  - This app **has not had a professional security audit**. It's built with reasonable defaults
+    (hashed passwords, httpOnly cookies, per-user scoped queries) but that's not the same as a
+    vetted, production-hardened multi-tenant service — don't put real sensitive data behind it.
+  - There is **no email verification** and **no password reset flow** — if a user forgets their
+    password, there's no recovery path other than querying the Postgres database directly.
   - There is **no rate limiting** on login/signup, no account lockout, and no CSRF protection beyond
-    the cookie's `SameSite=Lax` setting.
-  - The JWT signing secret (`JWT_SECRET`) should be set via `.env` for any persistent use; if it's
-    left unset the server generates a random one at startup, which invalidates all sessions on
-    every restart (see [Setup & running locally](#setup--running-locally)).
+    the cookie's `SameSite` setting.
+  - The JWT signing secret (`JWT_SECRET`) **must** be set via `.env` for stable sessions in any
+    real deployment; if left unset the server generates a random one at startup, which invalidates
+    all sessions on every restart (see [Setup & running locally](#setup--running-locally)).
+  - If you deploy this publicly, treat it as a **portfolio/demo project**, not a service handling
+    money or sensitive personal data for strangers.
 
 ## Tech stack
 
@@ -58,30 +64,29 @@ delayed market prices and **100% virtual money**.
   no-API-key-required wrapper around Yahoo Finance's public data), plus auth (`bcryptjs` +
   `jsonwebtoken` + `cookie-parser`) and per-user portfolio routes. The market-data proxy also avoids
   CORS issues calling Yahoo Finance directly from the browser.
-- **Persistence:** SQLite via Node's built-in [`node:sqlite`](https://nodejs.org/api/sqlite.html)
-  module (no extra native dependency needed) — one local database file at
-  `server/data/investment-trainer.db`, storing `users`, `holdings`, and `transactions` tables scoped
-  by `user_id`. This requires **Node 22.5+** (see below).
+- **Persistence:** Postgres, accessed via [`node-postgres`](https://node-postgres.com/) (`pg`).
+  Works with any Postgres instance — a local install, or a free hosted database on
+  [Neon](https://neon.tech) or [Supabase](https://supabase.com) for zero-setup dev/production.
+  Stores `users`, `holdings`, and `transactions` tables scoped by `user_id`; the schema is created
+  automatically on server startup.
 
 ## Project structure
 
 ```
 investment-trainer/
 ├── server/
-│   ├── data/                  # SQLite database file lives here (gitignored)
 │   └── src/
 │       ├── routes/            # /api/search, /api/quote/:symbol, /api/history/:symbol,
 │       │                      # /api/auth/*, /api/portfolio/*
 │       ├── middleware/auth.js # JWT-cookie auth guard for portfolio routes
 │       ├── lib/                # users.js, portfolio.js (DB access), jwt.js
-│       └── db.js              # SQLite connection + schema setup
+│       └── db.js              # Postgres connection pool + schema setup
 └── client/     # React + Vite frontend
 ```
 
 ## Setup & running locally
 
-Requires [Node.js](https://nodejs.org/) **22.5+** (tested with Node 24 — needed for the built-in
-`node:sqlite` module) and npm.
+Requires [Node.js](https://nodejs.org/) **18+** and npm, plus a Postgres database (see step 2).
 
 **1. Install dependencies (in two terminals, or sequentially):**
 
@@ -90,27 +95,39 @@ cd server && npm install
 cd ../client && npm install
 ```
 
-**2. Configure the server's environment:**
+**2. Get a Postgres database.** Either:
+
+- **Local Postgres** — if you already have it installed, create an empty database and use its
+  connection string, or
+- **Free hosted Postgres (recommended, zero local setup)** — create a free project/database at
+  [Neon](https://neon.tech) or [Supabase](https://supabase.com) and copy the connection string they
+  give you (it looks like `postgres://user:password@host/dbname?sslmode=require`). This works fine
+  for local development too, not just production.
+
+**3. Configure the server's environment:**
 
 ```bash
 cd server
 cp .env.example .env
 ```
 
-Edit `server/.env` and set `JWT_SECRET` to a long random string (used to sign login sessions). If
-you skip this, the server will still run — it just generates a random secret at startup, which logs
-everyone out whenever the server restarts.
+Edit `server/.env` and set:
+- `DATABASE_URL` to the connection string from step 2 — **required**, the server refuses to start
+  without it.
+- `JWT_SECRET` to a long random string (used to sign login sessions). If you skip this, the server
+  still runs — it just generates a random secret at startup, which logs everyone out whenever the
+  server restarts.
 
-**3. Run the backend (API + auth + market-data proxy), from `server/`:**
+**4. Run the backend (API + auth + market-data proxy), from `server/`:**
 
 ```bash
 npm run dev
 ```
 
-This starts the API on `http://localhost:4000` and creates/opens the SQLite database at
-`server/data/investment-trainer.db` on first run.
+This starts the API on `http://localhost:4000` and creates the `users`/`holdings`/`transactions`
+tables in your Postgres database automatically on first run.
 
-**4. Run the frontend, from `client/`:**
+**5. Run the frontend, from `client/`:**
 
 ```bash
 npm run dev
@@ -119,8 +136,38 @@ npm run dev
 This starts the Vite dev server on `http://localhost:5173` (it proxies `/api/*` requests to the
 backend on port 4000, so both need to be running). Open that URL in your browser.
 
-**Production build** (frontend only — this is a local dev tool, there's no deployed build/CDN
-step included):
+## Deploying to production
+
+The app is split into three independently-deployable pieces: a Postgres database, the Express API,
+and the static React build. A working free-tier combination:
+
+**1. Database — [Neon](https://neon.tech) or [Supabase](https://supabase.com).** Create a project,
+copy the connection string. This is your `DATABASE_URL`.
+
+**2. Backend — [Render](https://render.com), [Railway](https://railway.app), or
+[Fly.io](https://fly.io).** Deploy the `server/` directory as a Node web service:
+- Build command: `npm install`
+- Start command: `npm start`
+- Environment variables: `DATABASE_URL` (from step 1), `JWT_SECRET` (a long random string —
+  generate one with e.g. `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`),
+  `NODE_ENV=production`, and `CLIENT_ORIGIN` set to your deployed frontend's URL (step 3) once you
+  know it.
+- Note the backend's public URL (e.g. `https://investment-trainer-api.onrender.com`) — you'll need
+  it in step 3.
+
+**3. Frontend — [Vercel](https://vercel.com) or [Netlify](https://netlify.com).** Deploy the
+`client/` directory as a static Vite app:
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable: `VITE_API_BASE_URL` set to the backend URL from step 2.
+- Once deployed, go back to your backend's environment variables and set `CLIENT_ORIGIN` to this
+  frontend's URL, then redeploy the backend so CORS/cookies allow it.
+
+Because the frontend and backend end up on different domains, the login cookie is issued with
+`SameSite=None; Secure` in production (see `server/src/routes/auth.js`) — this requires both sides
+to be served over **HTTPS**, which all of the platforms above provide by default.
+
+**Local build preview** (frontend only, without deploying):
 
 ```bash
 cd client && npm run build && npm run preview
@@ -139,10 +186,9 @@ cd client && npm run build && npm run preview
 - **Rate limits:** the free Yahoo Finance data source has informal rate limits. Heavy, rapid-fire
   searching/quoting could occasionally get temporarily throttled.
 - **Accounts are real but not production-hardened:** see [Accounts & auth](#accounts--auth) above —
-  no email verification, no password reset, no rate limiting. This is still meant for one person
-  running the app locally, just with proper per-account separation instead of one shared browser
-  profile. Use the in-app "Reset simulator" button if you want to intentionally wipe your own
-  portfolio and start over.
+  no email verification, no password reset, no rate limiting. Fine for personal use or a portfolio
+  demo; not vetted for handling a large public user base. Use the in-app "Reset simulator" button if
+  you want to intentionally wipe your own portfolio and start over.
 - Market orders only — no limit orders, stop orders, options, short selling, margin, dividends, or
   fees/commissions are modeled. This keeps the simulator simple and focused on core buy/sell/P&L
   mechanics for beginners.

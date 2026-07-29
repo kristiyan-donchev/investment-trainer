@@ -6,14 +6,19 @@ const router = Router();
 
 router.use(requireAuth);
 
-router.get('/', (req, res) => {
-  res.json(getPortfolio(req.userId));
+router.get('/', async (req, res) => {
+  try {
+    res.json(await getPortfolio(req.userId));
+  } catch (err) {
+    console.error('get portfolio error', err.message);
+    res.status(500).json({ error: 'Could not load your portfolio right now.' });
+  }
 });
 
-router.post('/buy', (req, res) => {
+router.post('/buy', async (req, res) => {
   const { symbol, name, shares, price } = req.body || {};
   try {
-    const portfolio = buyShares(req.userId, {
+    const portfolio = await buyShares(req.userId, {
       symbol,
       name,
       shares: Number(shares),
@@ -25,10 +30,10 @@ router.post('/buy', (req, res) => {
   }
 });
 
-router.post('/sell', (req, res) => {
+router.post('/sell', async (req, res) => {
   const { symbol, name, shares, price } = req.body || {};
   try {
-    const portfolio = sellShares(req.userId, {
+    const portfolio = await sellShares(req.userId, {
       symbol,
       name,
       shares: Number(shares),
@@ -40,8 +45,13 @@ router.post('/sell', (req, res) => {
   }
 });
 
-router.post('/reset', (req, res) => {
-  res.json(resetPortfolio(req.userId));
+router.post('/reset', async (req, res) => {
+  try {
+    res.json(await resetPortfolio(req.userId));
+  } catch (err) {
+    console.error('reset portfolio error', err.message);
+    res.status(500).json({ error: 'Could not reset your portfolio right now.' });
+  }
 });
 
 export default router;

@@ -1,4 +1,7 @@
-const BASE = '/api';
+// In local dev this stays relative and Vite's dev proxy forwards it to the API.
+// In production, set VITE_API_BASE_URL to the deployed backend's origin, since
+// the frontend and backend are typically hosted on different domains.
+const BASE = `${import.meta.env.VITE_API_BASE_URL || ''}/api`;
 
 async function getJson(url) {
   const res = await fetch(url, { credentials: 'include' });

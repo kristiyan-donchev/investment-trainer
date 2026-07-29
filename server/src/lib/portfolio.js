@@ -1,29 +1,13 @@
 import crypto from 'crypto';
-import db, { STARTING_CASH } from '../db.js';
+import { pool, STARTING_CASH } from '../db.js';
 
-const selectUserCash = db.prepare(`SELECT cash FROM users WHERE id = ?`);
-const updateUserCash = db.prepare(`UPDATE users SET cash = ? WHERE id = ?`);
-const selectHoldings = db.prepare(`SELECT symbol, name, shares, avg_cost AS avgCost FROM holdings WHERE user_id = ?`);
-const selectHolding = db.prepare(`SELECT symbol, name, shares, avg_cost AS avgCost FROM holdings WHERE user_id = ? AND symbol = ?`);
-const upsertHolding = db.prepare(`
-  INSERT INTO holdings (user_id, symbol, name, shares, avg_cost)
-  VALUES (?, ?, ?, ?, ?)
-  ON CONFLICT(user_id, symbol) DO UPDATE SET shares = excluded.shares, avg_cost = excluded.avg_cost, name = excluded.name
-`);
-const deleteHolding = db.prepare(`DELETE FROM holdings WHERE user_id = ? AND symbol = ?`);
-const insertTransaction = db.prepare(`
-  INSERT INTO transactions (id, user_id, symbol, name, type, shares, price, total, realized_pnl, timestamp)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-const selectTransactions = db.prepare(
-  `SELECT id, symbol, name, type, shares, price, total, realized_pnl AS realizedPnL, timestamp
-   FROM transactions WHERE user_id = ? ORDER BY timestamp DESC`
-);
-const deleteHoldingsForUser = db.prepare(`DELETE FROM holdings WHERE user_id = ?`);
-const deleteTransactionsForUser = db.prepare(`DELETE FROM transactions WHERE user_id = ?`);
+const HOLDINGS_SELECT = `SELECT symbol, name, shares, avg_cost AS "avgCost" FROM holdings WHERE user_id = $1`;
+const TRANSACTIONS_SELECT = `
+  SELECT id, symbol, name, type, shares, price, total, realized_pnl AS "realizedPnL", timestamp
+  FROM transactions WHERE user_id = $1 ORDER BY timestamp DESC
+`;
 
-function holdingsMap(userId) {
-  const rows = selectHoldings.all(userId);
+function holdingsMap(rows) {
   const map = {};
   for (const row of rows) {
     map[row.symbol] = row;
@@ -31,101 +15,127 @@ function holdingsMap(userId) {
   return map;
 }
 
-export function getPortfolio(userId) {
-  const user = selectUserCash.get(userId);
+export async function getPortfolio(userId) {
+  const [userResult, holdingsResult, transactionsResult] = await Promise.all([
+    pool.query(`SELECT cash FROM users WHERE id = $1`, [userId]),
+    pool.query(HOLDINGS_SELECT, [userId]),
+    pool.query(TRANSACTIONS_SELECT, [userId]),
+  ]);
   return {
-    cash: user.cash,
-    holdings: holdingsMap(userId),
-    transactions: selectTransactions.all(userId),
+    cash: userResult.rows[0].cash,
+    holdings: holdingsMap(holdingsResult.rows),
+    transactions: transactionsResult.rows,
   };
 }
 
-export function buyShares(userId, { symbol, name, shares, price }) {
+export async function buyShares(userId, { symbol, name, shares, price }) {
   if (!(shares > 0)) throw new Error('Enter a positive number of shares.');
   const cost = shares * price;
-  const user = selectUserCash.get(userId);
-  if (cost > user.cash + 1e-9) throw new Error('Not enough virtual cash for this order.');
 
-  const existing = selectHolding.get(userId, symbol);
-  const newShares = (existing?.shares || 0) + shares;
-  const newAvgCost = existing ? (existing.avgCost * existing.shares + cost) / newShares : price;
-
-  db.exec('BEGIN');
+  const client = await pool.connect();
   try {
-    updateUserCash.run(user.cash - cost, userId);
-    upsertHolding.run(userId, symbol, name, newShares, newAvgCost);
-    insertTransaction.run(
-      crypto.randomUUID(),
-      userId,
-      symbol,
-      name,
-      'BUY',
-      shares,
-      price,
-      cost,
-      null,
-      Date.now()
+    await client.query('BEGIN');
+
+    const userResult = await client.query(`SELECT cash FROM users WHERE id = $1 FOR UPDATE`, [userId]);
+    const cash = userResult.rows[0].cash;
+    if (cost > cash + 1e-9) throw new Error('Not enough virtual cash for this order.');
+
+    const existingResult = await client.query(
+      `SELECT symbol, name, shares, avg_cost AS "avgCost" FROM holdings WHERE user_id = $1 AND symbol = $2`,
+      [userId, symbol]
     );
-    db.exec('COMMIT');
+    const existing = existingResult.rows[0];
+    const newShares = (existing?.shares || 0) + shares;
+    const newAvgCost = existing ? (existing.avgCost * existing.shares + cost) / newShares : price;
+
+    await client.query(`UPDATE users SET cash = $1 WHERE id = $2`, [cash - cost, userId]);
+    await client.query(
+      `INSERT INTO holdings (user_id, symbol, name, shares, avg_cost)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id, symbol)
+       DO UPDATE SET shares = EXCLUDED.shares, avg_cost = EXCLUDED.avg_cost, name = EXCLUDED.name`,
+      [userId, symbol, name, newShares, newAvgCost]
+    );
+    await client.query(
+      `INSERT INTO transactions (id, user_id, symbol, name, type, shares, price, total, realized_pnl, timestamp)
+       VALUES ($1, $2, $3, $4, 'BUY', $5, $6, $7, NULL, $8)`,
+      [crypto.randomUUID(), userId, symbol, name, shares, price, cost, Date.now()]
+    );
+
+    await client.query('COMMIT');
   } catch (err) {
-    db.exec('ROLLBACK');
+    await client.query('ROLLBACK');
     throw err;
+  } finally {
+    client.release();
   }
 
   return getPortfolio(userId);
 }
 
-export function sellShares(userId, { symbol, name, shares, price }) {
+export async function sellShares(userId, { symbol, name, shares, price }) {
   if (!(shares > 0)) throw new Error('Enter a positive number of shares.');
-  const existing = selectHolding.get(userId, symbol);
-  if (!existing || shares > existing.shares + 1e-9) {
-    throw new Error(`You only own ${existing?.shares || 0} share(s) of ${symbol}.`);
-  }
 
-  const proceeds = shares * price;
-  const realizedPnL = (price - existing.avgCost) * shares;
-  const remainingShares = existing.shares - shares;
-  const user = selectUserCash.get(userId);
-
-  db.exec('BEGIN');
+  const client = await pool.connect();
   try {
-    updateUserCash.run(user.cash + proceeds, userId);
-    if (remainingShares <= 1e-9) {
-      deleteHolding.run(userId, symbol);
-    } else {
-      upsertHolding.run(userId, symbol, name, remainingShares, existing.avgCost);
-    }
-    insertTransaction.run(
-      crypto.randomUUID(),
-      userId,
-      symbol,
-      name,
-      'SELL',
-      shares,
-      price,
-      proceeds,
-      realizedPnL,
-      Date.now()
+    await client.query('BEGIN');
+
+    const userResult = await client.query(`SELECT cash FROM users WHERE id = $1 FOR UPDATE`, [userId]);
+    const cash = userResult.rows[0].cash;
+
+    const existingResult = await client.query(
+      `SELECT symbol, name, shares, avg_cost AS "avgCost" FROM holdings WHERE user_id = $1 AND symbol = $2`,
+      [userId, symbol]
     );
-    db.exec('COMMIT');
+    const existing = existingResult.rows[0];
+    if (!existing || shares > existing.shares + 1e-9) {
+      throw new Error(`You only own ${existing?.shares || 0} share(s) of ${symbol}.`);
+    }
+
+    const proceeds = shares * price;
+    const realizedPnL = (price - existing.avgCost) * shares;
+    const remainingShares = existing.shares - shares;
+
+    await client.query(`UPDATE users SET cash = $1 WHERE id = $2`, [cash + proceeds, userId]);
+    if (remainingShares <= 1e-9) {
+      await client.query(`DELETE FROM holdings WHERE user_id = $1 AND symbol = $2`, [userId, symbol]);
+    } else {
+      await client.query(`UPDATE holdings SET shares = $1 WHERE user_id = $2 AND symbol = $3`, [
+        remainingShares,
+        userId,
+        symbol,
+      ]);
+    }
+    await client.query(
+      `INSERT INTO transactions (id, user_id, symbol, name, type, shares, price, total, realized_pnl, timestamp)
+       VALUES ($1, $2, $3, $4, 'SELL', $5, $6, $7, $8, $9)`,
+      [crypto.randomUUID(), userId, symbol, name, shares, price, proceeds, realizedPnL, Date.now()]
+    );
+
+    await client.query('COMMIT');
   } catch (err) {
-    db.exec('ROLLBACK');
+    await client.query('ROLLBACK');
     throw err;
+  } finally {
+    client.release();
   }
 
   return getPortfolio(userId);
 }
 
-export function resetPortfolio(userId) {
-  db.exec('BEGIN');
+export async function resetPortfolio(userId) {
+  const client = await pool.connect();
   try {
-    updateUserCash.run(STARTING_CASH, userId);
-    deleteHoldingsForUser.run(userId);
-    deleteTransactionsForUser.run(userId);
-    db.exec('COMMIT');
+    await client.query('BEGIN');
+    await client.query(`UPDATE users SET cash = $1 WHERE id = $2`, [STARTING_CASH, userId]);
+    await client.query(`DELETE FROM holdings WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM transactions WHERE user_id = $1`, [userId]);
+    await client.query('COMMIT');
   } catch (err) {
-    db.exec('ROLLBACK');
+    await client.query('ROLLBACK');
     throw err;
+  } finally {
+    client.release();
   }
   return getPortfolio(userId);
 }
