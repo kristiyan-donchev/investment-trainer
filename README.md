@@ -10,7 +10,9 @@ delayed market prices and **100% virtual money**.
 
 ## What it does
 
-- Gives you **$10,000 in virtual cash** to start.
+- **Real user accounts.** Sign up with a username, email, and password, then log in/out. Each
+  account gets its own portfolio — see [Accounts & auth](#accounts--auth) below.
+- Gives every new account **$10,000 in virtual cash** to start.
 - Lets you **search real ticker symbols** (e.g. `AAPL`, `MSFT`, `TSLA`) by company name or symbol.
 - Shows the **current price** and a **recent price history chart** (1 day up to 1 year) for any
   stock, pulled live from Yahoo Finance.
@@ -21,31 +23,65 @@ delayed market prices and **100% virtual money**.
 - Includes **plain-language explanations** (via hover/tap tooltips and an onboarding "Help" panel)
   for beginner terms like *market order*, *P&L*, *cost basis*, *diversification*, *ticker symbol*,
   and *volatility*.
-- **Persists everything locally** in your browser's `localStorage` — no account, no sign-up, no
-  server-side database. It's a single-user local simulator that lives entirely on your machine.
+- **Persists per-account server-side** in a local SQLite database — each user's cash, holdings, and
+  transaction history are scoped to their account.
+
+## Accounts & auth
+
+- **Sign up / log in / log out** with a username, email, and password. Passwords are hashed with
+  **bcrypt** (via `bcryptjs`) before being stored — plaintext passwords are never saved.
+- Sessions are handled with a **JWT stored in an `httpOnly` cookie** (not `localStorage`, to reduce
+  XSS exposure). The API's portfolio routes are protected by auth middleware that checks this
+  cookie and only ever reads/writes the requesting user's own data.
+- Every new account starts with **$10,000 in virtual cash** and an empty portfolio — there is no
+  migration path from the old browser-`localStorage`-only version, so upgrading from an older copy
+  of this app means starting fresh under a new account. That's expected and fine for a learning
+  tool.
+- **Security caveats (read before relying on this for anything beyond local practice):**
+  - This is a **local, single-machine app**, not a hardened multi-tenant service. It has not had a
+    security audit and should not be exposed to the public internet as-is.
+  - There is **no email verification** and **no password reset flow** — if you forget your
+    password, there's no recovery path other than editing the SQLite database directly.
+  - There is **no rate limiting** on login/signup, no account lockout, and no CSRF protection beyond
+    the cookie's `SameSite=Lax` setting.
+  - The JWT signing secret (`JWT_SECRET`) should be set via `.env` for any persistent use; if it's
+    left unset the server generates a random one at startup, which invalidates all sessions on
+    every restart (see [Setup & running locally](#setup--running-locally)).
 
 ## Tech stack
 
 - **Frontend:** React 18 + Vite, plain CSS (light/dark aware), [Recharts](https://recharts.org/) for
-  the price chart.
+  the price chart. A small `AuthContext` handles the logged-in user and gates the trading UI behind
+  a login/signup screen.
 - **Backend:** a small Node.js + Express server that proxies market-data requests to
   [`yahoo-finance2`](https://github.com/gadicc/node-yahoo-finance2) (an unofficial, free,
-  no-API-key-required wrapper around Yahoo Finance's public data). The proxy exists to avoid CORS
-  issues calling Yahoo Finance directly from the browser, and to keep the market-data dependency out
-  of the client bundle.
-- **Persistence:** browser `localStorage` — no database, no user accounts, nothing multi-tenant.
+  no-API-key-required wrapper around Yahoo Finance's public data), plus auth (`bcryptjs` +
+  `jsonwebtoken` + `cookie-parser`) and per-user portfolio routes. The market-data proxy also avoids
+  CORS issues calling Yahoo Finance directly from the browser.
+- **Persistence:** SQLite via Node's built-in [`node:sqlite`](https://nodejs.org/api/sqlite.html)
+  module (no extra native dependency needed) — one local database file at
+  `server/data/investment-trainer.db`, storing `users`, `holdings`, and `transactions` tables scoped
+  by `user_id`. This requires **Node 22.5+** (see below).
 
 ## Project structure
 
 ```
 investment-trainer/
-├── server/     # Express API: /api/search, /api/quote/:symbol, /api/history/:symbol
+├── server/
+│   ├── data/                  # SQLite database file lives here (gitignored)
+│   └── src/
+│       ├── routes/            # /api/search, /api/quote/:symbol, /api/history/:symbol,
+│       │                      # /api/auth/*, /api/portfolio/*
+│       ├── middleware/auth.js # JWT-cookie auth guard for portfolio routes
+│       ├── lib/                # users.js, portfolio.js (DB access), jwt.js
+│       └── db.js              # SQLite connection + schema setup
 └── client/     # React + Vite frontend
 ```
 
 ## Setup & running locally
 
-Requires [Node.js](https://nodejs.org/) 18+ (tested with Node 24) and npm.
+Requires [Node.js](https://nodejs.org/) **22.5+** (tested with Node 24 — needed for the built-in
+`node:sqlite` module) and npm.
 
 **1. Install dependencies (in two terminals, or sequentially):**
 
@@ -54,15 +90,27 @@ cd server && npm install
 cd ../client && npm install
 ```
 
-**2. Run the backend (market-data proxy), from `server/`:**
+**2. Configure the server's environment:**
+
+```bash
+cd server
+cp .env.example .env
+```
+
+Edit `server/.env` and set `JWT_SECRET` to a long random string (used to sign login sessions). If
+you skip this, the server will still run — it just generates a random secret at startup, which logs
+everyone out whenever the server restarts.
+
+**3. Run the backend (API + auth + market-data proxy), from `server/`:**
 
 ```bash
 npm run dev
 ```
 
-This starts the API on `http://localhost:4000`.
+This starts the API on `http://localhost:4000` and creates/opens the SQLite database at
+`server/data/investment-trainer.db` on first run.
 
-**3. Run the frontend, from `client/`:**
+**4. Run the frontend, from `client/`:**
 
 ```bash
 npm run dev
@@ -90,10 +138,11 @@ cd client && npm run build && npm run preview
   next to the price.
 - **Rate limits:** the free Yahoo Finance data source has informal rate limits. Heavy, rapid-fire
   searching/quoting could occasionally get temporarily throttled.
-- **No real accounts, no auth:** by design, this is a single-user local tool. All state lives in
-  your browser's `localStorage` for one browser/profile — clearing site data, using a different
-  browser, or using incognito mode will reset or hide your portfolio. Use the in-app "Reset
-  simulator" button if you want to intentionally start over.
+- **Accounts are real but not production-hardened:** see [Accounts & auth](#accounts--auth) above —
+  no email verification, no password reset, no rate limiting. This is still meant for one person
+  running the app locally, just with proper per-account separation instead of one shared browser
+  profile. Use the in-app "Reset simulator" button if you want to intentionally wipe your own
+  portfolio and start over.
 - Market orders only — no limit orders, stop orders, options, short selling, margin, dividends, or
   fees/commissions are modeled. This keeps the simulator simple and focused on core buy/sell/P&L
   mechanics for beginners.

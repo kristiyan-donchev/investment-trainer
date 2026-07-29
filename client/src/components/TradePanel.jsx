@@ -11,11 +11,11 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, error 
   const estimatedTotal = sharesNum > 0 ? sharesNum * quote.price : 0;
   const canSubmit = sharesNum > 0 && Number.isFinite(sharesNum);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
     const order = { symbol: quote.symbol, name: quote.name, shares: sharesNum, price: quote.price };
-    const ok = side === 'BUY' ? onBuy(order) : onSell(order);
+    const ok = side === 'BUY' ? await onBuy(order) : await onSell(order);
     if (ok) setShares('');
   }
 

@@ -52,6 +52,30 @@ body {
   gap: 8px;
 }
 
+.signed-in-as {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-page {
+  max-width: 480px;
+  padding-top: 60px;
+}
+
+.auth-panel h1 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+
+.auth-panel .trade-side-toggle {
+  margin: 20px 0 16px;
+}
+
+.auth-panel form {
+  margin-top: 4px;
+}
+
 .global-disclaimer {
   background: #fff7ed;
   border: 1px solid #fed7aa;
