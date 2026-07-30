@@ -26,7 +26,7 @@ delayed market prices and **100% virtual money**.
 - **Persists per-account server-side** in a Postgres database — each user's cash, holdings, and
   transaction history are scoped to their account.
 - **Deployable**, not just local-only: the frontend and backend are split so you can host them on
-  separate services (e.g. Vercel + Render + a hosted Postgres) — see
+  separate services (e.g. GitHub Pages + Render + a hosted Postgres) — see
   [Deploying to production](#deploying-to-production).
 
 ## Accounts & auth
@@ -155,13 +155,22 @@ copy the connection string. This is your `DATABASE_URL`.
 - Note the backend's public URL (e.g. `https://investment-trainer-api.onrender.com`) — you'll need
   it in step 3.
 
-**3. Frontend — [Vercel](https://vercel.com) or [Netlify](https://netlify.com).** Deploy the
-`client/` directory as a static Vite app:
-- Build command: `npm run build`
-- Output directory: `dist`
-- Environment variable: `VITE_API_BASE_URL` set to the backend URL from step 2.
-- Once deployed, go back to your backend's environment variables and set `CLIENT_ORIGIN` to this
-  frontend's URL, then redeploy the backend so CORS/cookies allow it.
+**3. Frontend — [GitHub Pages](https://pages.github.com/).** A workflow at
+`.github/workflows/deploy-pages.yml` builds `client/` and deploys it automatically on every push to
+`master` that touches `client/**`. One-time setup:
+- In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
+- In **Settings → Secrets and variables → Actions → Variables**, add a repository variable
+  `VITE_API_BASE_URL` set to the backend URL from step 2 (e.g.
+  `https://investment-trainer-api.onrender.com`) — the workflow bakes this into the build.
+- Push to `master` (or run the workflow manually from the **Actions** tab) to trigger the first
+  deploy. The site will be published at `https://<your-github-username>.github.io/investment-trainer/`.
+- Once you know that URL, go back to your backend's environment variables and set `CLIENT_ORIGIN` to
+  it, then redeploy the backend so CORS/cookies allow it.
+- `vite.config.js` sets `base: '/investment-trainer/'` for production builds to match GitHub Pages'
+  project-site subpath — if you rename the repo, update that path too.
+
+(Vercel or Netlify work too, if you'd rather not use GitHub Pages — same build command `npm run
+build`, output directory `dist`, and `VITE_API_BASE_URL` env var.)
 
 Because the frontend and backend end up on different domains, the login cookie is issued with
 `SameSite=None; Secure` in production (see `server/src/routes/auth.js`) — this requires both sides
