@@ -1,14 +1,24 @@
-import { useAuth } from '../context/AuthContext.jsx';
+import ProfileMenu from './ProfileMenu.jsx';
 
-export default function Header({ onShowHelp, onReset }) {
-  const { user, logout } = useAuth();
-
+export default function Header({ onShowHelp, onReset, onGoHome }) {
   return (
     <header className="app-header">
       <div>
-        <h1>Investment Trainer</h1>
+        <h1
+          className="app-title-home"
+          onClick={onGoHome}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onGoHome();
+            }
+          }}
+        >
+          Investment Trainer
+        </h1>
         <p className="tagline">Practice trading with real market prices — using 100% virtual money.</p>
-        {user && <p className="signed-in-as">Signed in as {user.username}</p>}
       </div>
       <div className="header-actions">
         <button className="secondary-button" onClick={onShowHelp}>
@@ -17,9 +27,7 @@ export default function Header({ onShowHelp, onReset }) {
         <button className="secondary-button" onClick={onReset}>
           Reset simulator
         </button>
-        <button className="secondary-button" onClick={logout}>
-          Log out
-        </button>
+        <ProfileMenu />
       </div>
     </header>
   );

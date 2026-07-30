@@ -59,6 +59,13 @@ export default function TradingApp() {
     setShowHelp(false);
   }
 
+  function handleGoHome() {
+    setSelectedSymbol(null);
+    setSelectedName('');
+    setQuoteError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function handleReset() {
     if (window.confirm('This will erase your virtual cash, holdings, and transaction history. Continue?')) {
       await reset();
@@ -88,7 +95,7 @@ export default function TradingApp() {
     <div className="app">
       {showHelp && <Onboarding onClose={closeHelp} />}
 
-      <Header onShowHelp={() => setShowHelp(true)} onReset={handleReset} />
+      <Header onShowHelp={() => setShowHelp(true)} onReset={handleReset} onGoHome={handleGoHome} />
 
       <p className="global-disclaimer">
         ⚠️ Simulator only. Prices come from public market data (which may be delayed a few minutes)
