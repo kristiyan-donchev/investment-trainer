@@ -3,6 +3,11 @@
 // the frontend and backend are typically hosted on different domains.
 const BASE = `${import.meta.env.VITE_API_BASE_URL || ''}/api`;
 
+// Google sign-in is a full-page redirect (not a fetch), so the backend can run
+// the OAuth code exchange server-side and set the session cookie before
+// bouncing back to the frontend.
+export const GOOGLE_AUTH_URL = `${BASE}/auth/google`;
+
 async function getJson(url) {
   const res = await fetch(url, { credentials: 'include' });
   const data = await res.json().catch(() => ({}));

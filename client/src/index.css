@@ -351,6 +351,45 @@ body {
   margin-bottom: 10px;
 }
 
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.google-button:hover {
+  background: #f8fafc;
+}
+
 .disclaimer-inline {
   font-size: 12px;
   color: var(--muted);
@@ -549,6 +588,15 @@ body {
   .secondary-button {
     background: #16203a;
     color: var(--text);
+  }
+
+  .google-button {
+    background: #16203a;
+    color: var(--text);
+  }
+
+  .google-button:hover {
+    background: #1c2a4a;
   }
 
   .global-disclaimer {

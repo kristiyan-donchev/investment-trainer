@@ -31,8 +31,15 @@ delayed market prices and **100% virtual money**.
 
 ## Accounts & auth
 
-- **Sign up / log in / log out** with a username, email, and password. Passwords are hashed with
-  **bcrypt** (via `bcryptjs`) before being stored — plaintext passwords are never saved.
+- **Sign up / log in / log out** with a username, email, and password, or **continue with Google**.
+  Passwords are hashed with **bcrypt** (via `bcryptjs`) before being stored — plaintext passwords are
+  never saved. Google accounts have no password on file at all.
+- Google sign-in uses the standard OAuth 2.0 authorization-code flow, run entirely server-side: the
+  backend redirects to Google, exchanges the returned code for the user's verified email, then
+  creates an account (or links to an existing password-based account with the same email) and issues
+  the same session cookie as the password flow. See `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` /
+  `GOOGLE_REDIRECT_URI` in `server/.env.example` — the button is hidden behind a 500 if these aren't
+  set, so Google sign-in is entirely optional.
 - Sessions are handled with a **JWT stored in an `httpOnly` cookie** (not `localStorage`, to reduce
   XSS exposure). The API's portfolio routes are protected by auth middleware that checks this
   cookie and only ever reads/writes the requesting user's own data.
@@ -151,7 +158,11 @@ copy the connection string. This is your `DATABASE_URL`.
 - Environment variables: `DATABASE_URL` (from step 1), `JWT_SECRET` (a long random string —
   generate one with e.g. `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`),
   `NODE_ENV=production`, and `CLIENT_ORIGIN` set to your deployed frontend's URL (step 3) once you
-  know it.
+  know it. Optionally add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` (see
+  [Accounts & auth](#accounts--auth)) to enable "Continue with Google" — `GOOGLE_REDIRECT_URI` must
+  be this backend's own public URL plus `/api/auth/google/callback`, and must be added as an
+  "Authorized redirect URI" on the Google OAuth client in
+  [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 - Note the backend's public URL (e.g. `https://investment-trainer-api.onrender.com`) — you'll need
   it in step 3.
 

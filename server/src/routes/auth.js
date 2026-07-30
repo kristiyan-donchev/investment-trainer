@@ -1,12 +1,28 @@
+import crypto from 'crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { createUser, findUserByUsername, findUserByEmail, findUserById, toPublicUser } from '../lib/users.js';
+import {
+  createUser,
+  findUserByUsername,
+  findUserByEmail,
+  findUserById,
+  findUserByGoogleId,
+  createGoogleUser,
+  linkGoogleId,
+  generateUsernameFromEmail,
+  toPublicUser,
+} from '../lib/users.js';
 import { signToken, COOKIE_NAME } from '../lib/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
 const IS_PROD = process.env.NODE_ENV === 'production';
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
+const CLIENT_ORIGIN = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0];
+const OAUTH_STATE_COOKIE = 'investment_trainer_oauth_state';
 
 // Cross-site cookies (frontend and backend on different domains in production)
 // require SameSite=None, which browsers only honor when Secure is also set.
@@ -70,6 +86,9 @@ router.post('/login', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
+    if (!user.password_hash) {
+      return res.status(401).json({ error: 'That account signs in with Google. Use the Google button below.' });
+    }
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
@@ -88,6 +107,81 @@ router.post('/login', async (req, res) => {
 router.post('/logout', (_req, res) => {
   res.clearCookie(COOKIE_NAME, CLEAR_COOKIE_OPTIONS);
   res.json({ ok: true });
+});
+
+router.get('/google', (req, res) => {
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_REDIRECT_URI) {
+    return res.status(500).send('Google sign-in is not configured on this server.');
+  }
+
+  const state = crypto.randomBytes(16).toString('hex');
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: IS_PROD ? 'none' : 'lax',
+    secure: IS_PROD,
+    maxAge: 5 * 60 * 1000,
+  });
+
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: GOOGLE_REDIRECT_URI,
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account',
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+router.get('/google/callback', async (req, res) => {
+  const { code, state } = req.query;
+  const cookieState = req.cookies?.[OAUTH_STATE_COOKIE];
+  res.clearCookie(OAUTH_STATE_COOKIE, CLEAR_COOKIE_OPTIONS);
+
+  if (!code || !state || state !== cookieState) {
+    return res.redirect(`${CLIENT_ORIGIN}/?authError=google`);
+  }
+
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: GOOGLE_REDIRECT_URI,
+        grant_type: 'authorization_code',
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok) throw new Error(tokenData.error_description || 'Google token exchange failed.');
+
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await profileRes.json();
+    if (!profileRes.ok || !profile.email_verified) {
+      throw new Error('Could not verify the Google account email.');
+    }
+
+    let user = await findUserByGoogleId(profile.sub);
+    if (!user) {
+      const existing = await findUserByEmail(profile.email);
+      user = existing ? await linkGoogleId(existing.id, profile.sub) : null;
+    }
+    if (!user) {
+      const username = await generateUsernameFromEmail(profile.email);
+      user = await createGoogleUser({ username, email: profile.email, googleId: profile.sub });
+    }
+
+    const token = signToken(user.id);
+    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
+    res.redirect(CLIENT_ORIGIN);
+  } catch (err) {
+    console.error('google auth error', err.message);
+    res.redirect(`${CLIENT_ORIGIN}/?authError=google`);
+  }
 });
 
 router.get('/me', requireAuth, async (req, res) => {

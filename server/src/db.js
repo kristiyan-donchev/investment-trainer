@@ -27,10 +27,15 @@ export async function initSchema() {
       id SERIAL PRIMARY KEY,
       username TEXT NOT NULL UNIQUE,
       email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
+      password_hash TEXT,
+      google_id TEXT UNIQUE,
       cash DOUBLE PRECISION NOT NULL DEFAULT ${STARTING_CASH},
       created_at BIGINT NOT NULL
     );
+
+    -- Migrate existing deployments created before Google sign-in was added.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
+    ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
     CREATE TABLE IF NOT EXISTS holdings (
       id SERIAL PRIMARY KEY,
