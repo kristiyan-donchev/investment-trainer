@@ -22,6 +22,10 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 const CLIENT_ORIGIN = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0];
+// CLIENT_ORIGIN must stay a bare origin (scheme+host) to match the browser's Origin
+// header for CORS. GitHub Pages project sites serve from a subpath though, so the
+// page Google should redirect back to after login needs its own, more specific URL.
+const CLIENT_APP_URL = process.env.CLIENT_APP_URL || CLIENT_ORIGIN;
 const OAUTH_STATE_COOKIE = 'investment_trainer_oauth_state';
 
 // Cross-site cookies (frontend and backend on different domains in production)
@@ -139,7 +143,7 @@ router.get('/google/callback', async (req, res) => {
   res.clearCookie(OAUTH_STATE_COOKIE, CLEAR_COOKIE_OPTIONS);
 
   if (!code || !state || state !== cookieState) {
-    return res.redirect(`${CLIENT_ORIGIN}/?authError=google`);
+    return res.redirect(`${CLIENT_APP_URL}?authError=google`);
   }
 
   try {
@@ -177,10 +181,10 @@ router.get('/google/callback', async (req, res) => {
 
     const token = signToken(user.id);
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
-    res.redirect(CLIENT_ORIGIN);
+    res.redirect(CLIENT_APP_URL);
   } catch (err) {
     console.error('google auth error', err.message);
-    res.redirect(`${CLIENT_ORIGIN}/?authError=google`);
+    res.redirect(`${CLIENT_APP_URL}?authError=google`);
   }
 });
 

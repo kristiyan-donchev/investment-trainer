@@ -162,7 +162,10 @@ copy the connection string. This is your `DATABASE_URL`.
   [Accounts & auth](#accounts--auth)) to enable "Continue with Google" — `GOOGLE_REDIRECT_URI` must
   be this backend's own public URL plus `/api/auth/google/callback`, and must be added as an
   "Authorized redirect URI" on the Google OAuth client in
-  [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+  [Google Cloud Console](https://console.cloud.google.com/apis/credentials). If the frontend is
+  hosted at a subpath (as GitHub Pages project sites are), also set `CLIENT_APP_URL` to the full
+  frontend URL — `CLIENT_ORIGIN` has to stay a bare origin for CORS, so it can't double as the
+  post-login redirect target.
 - Note the backend's public URL (e.g. `https://investment-trainer-api.onrender.com`) — you'll need
   it in step 3.
 
