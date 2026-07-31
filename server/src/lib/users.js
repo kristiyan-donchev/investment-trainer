@@ -61,6 +61,43 @@ export async function generateUsernameFromEmail(email) {
   return candidate;
 }
 
+export async function updateUsername(userId, username) {
+  const result = await pool.query(`UPDATE users SET username = $1 WHERE id = $2 RETURNING *`, [
+    username,
+    userId,
+  ]);
+  return result.rows[0];
+}
+
+export async function updatePasswordHash(userId, passwordHash) {
+  await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, userId]);
+}
+
+// Deletes a user and everything scoped to them. Holdings/transactions have no
+// ON DELETE CASCADE, so they're removed manually in the same transaction —
+// mirrors resetPortfolio()'s cleanup in lib/portfolio.js.
+export async function deleteAccount(userId) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM transactions WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM holdings WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM users WHERE id = $1`, [userId]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export function toPublicUser(user) {
-  return { id: user.id, username: user.username, email: user.email, createdAt: user.created_at };
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    createdAt: user.created_at,
+    hasPassword: Boolean(user.password_hash),
+  };
 }
