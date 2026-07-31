@@ -3,6 +3,7 @@ import Header from './Header.jsx';
 import Onboarding from './Onboarding.jsx';
 import SearchBar from './SearchBar.jsx';
 import PriceChart from './PriceChart.jsx';
+import PerformanceChart from './PerformanceChart.jsx';
 import TradePanel from './TradePanel.jsx';
 import PortfolioSummary from './PortfolioSummary.jsx';
 import HoldingsTable from './HoldingsTable.jsx';
@@ -108,6 +109,11 @@ export default function TradingApp() {
         totalRealizedPnL={totalRealizedPnL(state.transactions)}
         startingCash={STARTING_CASH}
       />
+
+      <section className="panel">
+        <h2>Portfolio performance</h2>
+        <PerformanceChart />
+      </section>
 
       <section className="panel">
         <h2>Look up a stock</h2>
