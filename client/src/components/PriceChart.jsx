@@ -63,10 +63,31 @@ export default function PriceChart({ symbol }) {
       {!loading && !errorMsg && chartData.length > 0 && (
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData}>
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={30} />
-            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 11 }} width={60} />
-            <RechartsTooltip formatter={(v) => `$${Number(v).toFixed(2)}`} />
-            <Line type="monotone" dataKey="close" stroke="#2f6fed" dot={false} strokeWidth={2} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={{ stroke: 'var(--border)' }}
+              tickLine={{ stroke: 'var(--border)' }}
+              minTickGap={30}
+            />
+            <YAxis
+              domain={['auto', 'auto']}
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={{ stroke: 'var(--border)' }}
+              tickLine={{ stroke: 'var(--border)' }}
+              width={60}
+            />
+            <RechartsTooltip
+              formatter={(v) => `$${Number(v).toFixed(2)}`}
+              contentStyle={{
+                background: 'var(--panel-bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                color: 'var(--text)',
+              }}
+              labelStyle={{ color: 'var(--muted)' }}
+            />
+            <Line type="monotone" dataKey="close" stroke="var(--primary)" dot={false} strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
       )}
