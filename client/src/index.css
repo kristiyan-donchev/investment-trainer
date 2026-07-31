@@ -70,7 +70,11 @@ body {
   font-size: 13px;
 }
 
-/* Profile button + modal */
+/* Profile button + dropdown + modal */
+.profile-menu {
+  position: relative;
+}
+
 .profile-button {
   width: 36px;
   height: 36px;
@@ -89,6 +93,62 @@ body {
 
 .profile-button:hover {
   background: var(--primary-dark);
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 160px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-dropdown-item {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.profile-dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.profile-dropdown-logout {
+  color: var(--red);
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.settings-item-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.settings-item-desc {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+  max-width: 340px;
 }
 
 .profile-info {
@@ -128,15 +188,6 @@ body {
   color: var(--muted);
   font-size: 13px;
   margin-top: 4px;
-}
-
-.profile-logout {
-  width: 100%;
-  margin-top: 16px;
-}
-
-.secondary-button.profile-logout {
-  color: var(--red);
 }
 
 .auth-page {
@@ -693,5 +744,9 @@ body {
 
   .modal {
     background: #1a2438;
+  }
+
+  .profile-dropdown-item:hover {
+    background: #16203a;
   }
 }
