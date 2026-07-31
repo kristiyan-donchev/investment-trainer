@@ -1,11 +1,24 @@
 import crypto from 'crypto';
 import { pool, STARTING_CASH } from '../db.js';
+import { yahooFinance } from './yahoo.js';
 
 const HOLDINGS_SELECT = `SELECT symbol, name, shares, avg_cost AS "avgCost" FROM holdings WHERE user_id = $1`;
 const TRANSACTIONS_SELECT = `
   SELECT id, symbol, name, type, shares, price, total, realized_pnl AS "realizedPnL", timestamp
   FROM transactions WHERE user_id = $1 ORDER BY timestamp DESC
 `;
+
+// interval/lookback-days per requested range; 'all' has no fixed lookback since
+// it's bounded by the account's creation date instead.
+const PERFORMANCE_RANGE_CONFIG = {
+  '1d': { interval: '5m', days: 1 },
+  '1w': { interval: '15m', days: 7 },
+  '1mo': { interval: '1d', days: 31 },
+  '3mo': { interval: '1d', days: 92 },
+  '6mo': { interval: '1d', days: 183 },
+  '1y': { interval: '1d', days: 365 },
+  all: { interval: '1d', days: null },
+};
 
 function holdingsMap(rows) {
   const map = {};
@@ -121,6 +134,113 @@ export async function sellShares(userId, { symbol, name, shares, price }) {
   }
 
   return getPortfolio(userId);
+}
+
+// Reconstructs portfolio value (cash + holdings, marked at each historical price
+// point) over time from the transaction log and Yahoo's historical prices, since
+// no periodic net-worth snapshots are stored anywhere. Works from account
+// inception forward so balances carried into the requested window are correct
+// even when the range starts mid-history.
+export async function getPerformance(userId, range) {
+  const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
+
+  const userResult = await pool.query(`SELECT created_at FROM users WHERE id = $1`, [userId]);
+  const createdAt = userResult.rows[0].created_at;
+
+  const now = Date.now();
+  const rangeStart = config.days != null ? now - config.days * 24 * 60 * 60 * 1000 : createdAt;
+  const period1 = new Date(Math.max(rangeStart, createdAt));
+  const period2 = new Date(now);
+  // Yahoo's chart endpoint rejects period1 === period2, which happens for any
+  // account created within the last moment (i.e. every brand-new signup) since
+  // `period1` above is clamped to `createdAt`. Fetch a padded window so the
+  // request stays valid, but keep filtering results to the real range below.
+  const fetchPeriod1 = new Date(Math.min(createdAt, now - 24 * 60 * 60 * 1000));
+
+  const txResult = await pool.query(
+    `SELECT symbol, type, shares, price, timestamp FROM transactions WHERE user_id = $1 ORDER BY timestamp ASC`,
+    [userId]
+  );
+  const transactions = txResult.rows;
+  const symbols = [...new Set(transactions.map((t) => t.symbol))];
+
+  const priceHistories = {};
+  await Promise.all(
+    symbols.map(async (symbol) => {
+      try {
+        const chart = await yahooFinance.chart(symbol, {
+          period1: fetchPeriod1,
+          period2,
+          interval: config.interval,
+        });
+        priceHistories[symbol] = (chart.quotes || [])
+          .filter((q) => q.close != null)
+          .map((q) => ({ time: new Date(q.date).getTime(), close: q.close }));
+      } catch (err) {
+        console.error(`performance: failed to fetch history for ${symbol}`, err.message);
+        priceHistories[symbol] = [];
+      }
+    })
+  );
+
+  const timelineSet = new Set();
+  for (const symbol of symbols) {
+    for (const point of priceHistories[symbol]) {
+      if (point.time >= period1.getTime() && point.time <= period2.getTime()) {
+        timelineSet.add(point.time);
+      }
+    }
+  }
+  let timeline = [...timelineSet].sort((a, b) => a - b);
+  if (timeline.length === 0) {
+    // No holdings ever traded, or no price data in range: still show a flat line.
+    timeline = [period1.getTime(), period2.getTime()];
+  }
+
+  function priceAt(symbol, time) {
+    const history = priceHistories[symbol];
+    if (!history || history.length === 0) return null;
+    let price = null;
+    for (const point of history) {
+      if (point.time > time) break;
+      price = point.close;
+    }
+    return price ?? history[0].close;
+  }
+
+  let txIndex = 0;
+  let cash = STARTING_CASH;
+  const shares = {};
+
+  const points = timeline.map((time) => {
+    while (txIndex < transactions.length && Number(transactions[txIndex].timestamp) <= time) {
+      const t = transactions[txIndex];
+      const qty = Number(t.shares);
+      if (t.type === 'BUY') {
+        cash -= qty * Number(t.price);
+        shares[t.symbol] = (shares[t.symbol] || 0) + qty;
+      } else {
+        cash += qty * Number(t.price);
+        shares[t.symbol] = (shares[t.symbol] || 0) - qty;
+      }
+      txIndex += 1;
+    }
+
+    let holdingsValue = 0;
+    for (const [symbol, qty] of Object.entries(shares)) {
+      if (qty <= 1e-9) continue;
+      holdingsValue += qty * (priceAt(symbol, time) ?? 0);
+    }
+
+    const value = cash + holdingsValue;
+    return {
+      date: new Date(time).toISOString(),
+      value,
+      roiPercent: ((value - STARTING_CASH) / STARTING_CASH) * 100,
+    };
+  });
+
+  return { range, startingCash: STARTING_CASH, points };
 }
 
 export async function resetPortfolio(userId) {

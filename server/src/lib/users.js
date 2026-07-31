@@ -62,5 +62,5 @@ export async function generateUsernameFromEmail(email) {
 }
 
 export function toPublicUser(user) {
-  return { id: user.id, username: user.username, email: user.email };
+  return { id: user.id, username: user.username, email: user.email, createdAt: user.created_at };
 }

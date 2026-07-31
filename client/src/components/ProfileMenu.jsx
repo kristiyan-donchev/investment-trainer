@@ -1,64 +1,72 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import PerformanceChart from './PerformanceChart.jsx';
+
+function formatMemberSince(createdAt) {
+  if (!createdAt) return null;
+  return new Date(createdAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
 
 export default function ProfileMenu() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        setOpen(false);
-      }
-    }
-    function handleEscape(e) {
-      if (e.key === 'Escape') setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [open]);
 
   if (!user) return null;
 
   const initial = user.username?.[0]?.toUpperCase() || '?';
+  const memberSince = formatMemberSince(user.createdAt);
 
   return (
-    <div className="profile-menu" ref={menuRef}>
+    <>
       <button
         type="button"
         className="profile-button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label="Account menu"
-        aria-haspopup="true"
-        aria-expanded={open}
+        onClick={() => setOpen(true)}
+        aria-label="View profile"
+        aria-haspopup="dialog"
       >
         {initial}
       </button>
 
       {open && (
-        <div className="profile-dropdown" role="menu">
-          <div className="profile-dropdown-info">
-            <div className="profile-dropdown-username">{user.username}</div>
-            <div className="profile-dropdown-email">{user.email}</div>
+        <div className="modal-overlay" onClick={() => setOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Your profile</h2>
+              <button className="icon-button" onClick={() => setOpen(false)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+
+            <div className="profile-info">
+              <div className="profile-avatar-large">{initial}</div>
+              <div>
+                <div className="profile-info-username">{user.username}</div>
+                <div className="profile-info-email">{user.email}</div>
+                {memberSince && <div className="profile-info-meta">Member since {memberSince}</div>}
+              </div>
+            </div>
+
+            <h3>Portfolio performance</h3>
+            <PerformanceChart />
+
+            <button
+              type="button"
+              className="secondary-button profile-logout"
+              onClick={() => {
+                setOpen(false);
+                logout();
+              }}
+            >
+              Log out
+            </button>
           </div>
-          <button
-            type="button"
-            className="profile-dropdown-logout"
-            onClick={() => {
-              setOpen(false);
-              logout();
-            }}
-          >
-            Log out
-          </button>
         </div>
       )}
-    </div>
+    </>
   );
 }

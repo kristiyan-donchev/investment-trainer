@@ -76,3 +76,7 @@ export function sellShares(order) {
 export function resetPortfolio() {
   return postJson(`${BASE}/portfolio/reset`, {});
 }
+
+export function fetchPerformance(range = '1mo') {
+  return getJson(`${BASE}/portfolio/performance?range=${encodeURIComponent(range)}`);
+}

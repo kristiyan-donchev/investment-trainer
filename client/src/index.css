@@ -70,11 +70,7 @@ body {
   font-size: 13px;
 }
 
-/* Profile menu */
-.profile-menu {
-  position: relative;
-}
-
+/* Profile button + modal */
 .profile-button {
   width: 36px;
   height: 36px;
@@ -95,51 +91,52 @@ body {
   background: var(--primary-dark);
 }
 
-.profile-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 30;
-  min-width: 220px;
-  background: var(--panel-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 8px;
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0;
 }
 
-.profile-dropdown-info {
-  padding: 8px 10px 10px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 6px;
+.profile-avatar-large {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.profile-dropdown-username {
-  font-weight: 600;
-  font-size: 14px;
+.profile-info-username {
+  font-weight: 700;
+  font-size: 17px;
 }
 
-.profile-dropdown-email {
+.profile-info-email {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14px;
   margin-top: 2px;
   overflow-wrap: anywhere;
 }
 
-.profile-dropdown-logout {
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 14px;
-  cursor: pointer;
-  color: var(--red);
+.profile-info-meta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
 }
 
-.profile-dropdown-logout:hover {
-  background: #fef2f2;
+.profile-logout {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.secondary-button.profile-logout {
+  color: var(--red);
 }
 
 .auth-page {
@@ -692,10 +689,6 @@ body {
   .form-error {
     background: #3b1414;
     border-color: #7c2626;
-  }
-
-  .profile-dropdown-logout:hover {
-    background: #3b1414;
   }
 
   .modal {
