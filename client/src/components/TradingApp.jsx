@@ -98,11 +98,6 @@ export default function TradingApp() {
 
       <Header onShowHelp={() => setShowHelp(true)} onReset={handleReset} onGoHome={handleGoHome} />
 
-      <p className="global-disclaimer">
-        ⚠️ Simulator only. Prices come from public market data (which may be delayed a few minutes)
-        and no real money, brokerage account, or order ever leaves this app.
-      </p>
-
       <PortfolioSummary
         cash={state.cash}
         holdingsValue={holdingsValue}
