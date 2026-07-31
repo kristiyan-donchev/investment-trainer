@@ -10,6 +10,9 @@ import {
   createGoogleUser,
   linkGoogleId,
   generateUsernameFromEmail,
+  updateUsername,
+  updatePasswordHash,
+  deleteAccount,
   toPublicUser,
 } from '../lib/users.js';
 import { signToken, COOKIE_NAME } from '../lib/jwt.js';
@@ -195,6 +198,64 @@ router.get('/me', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('me error', err.message);
     res.status(500).json({ error: 'Something went wrong loading your account.' });
+  }
+});
+
+router.post('/username', requireAuth, async (req, res) => {
+  const { username } = req.body || {};
+  if (typeof username !== 'string' || !USERNAME_RE.test(username)) {
+    return res.status(400).json({ error: 'Username must be 3-24 characters (letters, numbers, underscore).' });
+  }
+  try {
+    const existing = await findUserByUsername(username);
+    if (existing && existing.id !== req.userId) {
+      return res.status(409).json({ error: 'That username is already taken.' });
+    }
+    const user = await updateUsername(req.userId, username);
+    res.json({ user: toPublicUser(user) });
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'That username is already taken.' });
+    }
+    console.error('update username error', err.message);
+    res.status(500).json({ error: 'Something went wrong updating your username.' });
+  }
+});
+
+router.post('/password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+  }
+  try {
+    const user = await findUserById(req.userId);
+    if (user.password_hash) {
+      if (typeof currentPassword !== 'string' || !(await bcrypt.compare(currentPassword, user.password_hash))) {
+        return res.status(401).json({ error: 'Current password is incorrect.' });
+      }
+    }
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await updatePasswordHash(req.userId, passwordHash);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('update password error', err.message);
+    res.status(500).json({ error: 'Something went wrong updating your password.' });
+  }
+});
+
+router.post('/delete', requireAuth, async (req, res) => {
+  const { confirmUsername } = req.body || {};
+  try {
+    const user = await findUserById(req.userId);
+    if (confirmUsername !== user.username) {
+      return res.status(400).json({ error: 'Type your username exactly to confirm account deletion.' });
+    }
+    await deleteAccount(req.userId);
+    res.clearCookie(COOKIE_NAME, CLEAR_COOKIE_OPTIONS);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('delete account error', err.message);
+    res.status(500).json({ error: 'Something went wrong deleting your account.' });
   }
 });
 
