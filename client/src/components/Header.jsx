@@ -24,10 +24,7 @@ export default function Header({ onShowHelp, onReset, onGoHome }) {
         <button className="secondary-button" onClick={onShowHelp}>
           Help &amp; terms
         </button>
-        <button className="secondary-button" onClick={onReset}>
-          Reset simulator
-        </button>
-        <ProfileMenu />
+        <ProfileMenu onReset={onReset} />
       </div>
     </header>
   );
