@@ -184,6 +184,11 @@ export async function getPerformance(userId, range) {
   );
 
   const timelineSet = new Set();
+  // Always anchor the timeline to the full requested span so the chart draws a
+  // line (not a single dot) even when there's little or no price data inside
+  // it yet — e.g. an account created earlier today.
+  timelineSet.add(period1.getTime());
+  timelineSet.add(period2.getTime());
   for (const symbol of symbols) {
     for (const point of priceHistories[symbol]) {
       if (point.time >= period1.getTime() && point.time <= period2.getTime()) {
@@ -191,11 +196,7 @@ export async function getPerformance(userId, range) {
       }
     }
   }
-  let timeline = [...timelineSet].sort((a, b) => a - b);
-  if (timeline.length === 0) {
-    // No holdings ever traded, or no price data in range: still show a flat line.
-    timeline = [period1.getTime(), period2.getTime()];
-  }
+  const timeline = [...timelineSet].sort((a, b) => a - b);
 
   function priceAt(symbol, time) {
     const history = priceHistories[symbol];
