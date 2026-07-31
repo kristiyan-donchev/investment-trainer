@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
+
+const THEME_OPTIONS = [
+  { value: 'light', label: 'Light', icon: '☀️' },
+  { value: 'dark', label: 'Dark', icon: '🌙' },
+  { value: 'system', label: 'System', icon: '💻' },
+];
 
 function formatMemberSince(createdAt) {
   if (!createdAt) return null;
@@ -12,6 +19,7 @@ function formatMemberSince(createdAt) {
 
 export default function ProfileMenu({ onReset }) {
   const { user, logout, updateUsername, changePassword, deleteAccount } = useAuth();
+  const { mode, setMode } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // null | 'profile' | 'settings'
   const menuRef = useRef(null);
@@ -193,6 +201,28 @@ export default function ProfileMenu({ onReset }) {
                 ✕
               </button>
             </div>
+
+            <div className="settings-section">
+              <div className="settings-section-title">Appearance</div>
+              <div className="settings-section-desc">Choose how Investment Trainer looks on this device.</div>
+              <div className="theme-switch" role="radiogroup" aria-label="Theme">
+                {THEME_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={mode === opt.value}
+                    className={mode === opt.value ? 'theme-switch-option active' : 'theme-switch-option'}
+                    onClick={() => setMode(opt.value)}
+                  >
+                    <span aria-hidden="true">{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="settings-divider" />
 
             <div className="settings-section">
               <div className="settings-section-title">Change username</div>
