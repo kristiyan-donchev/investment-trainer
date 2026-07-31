@@ -80,3 +80,15 @@ export function resetPortfolio() {
 export function fetchPerformance(range = '1mo') {
   return getJson(`${BASE}/portfolio/performance?range=${encodeURIComponent(range)}`);
 }
+
+export function updateUsername(username) {
+  return postJson(`${BASE}/auth/username`, { username }).then((d) => d.user);
+}
+
+export function updatePassword({ currentPassword, newPassword }) {
+  return postJson(`${BASE}/auth/password`, { currentPassword, newPassword });
+}
+
+export function deleteAccount(confirmUsername) {
+  return postJson(`${BASE}/auth/delete`, { confirmUsername });
+}
