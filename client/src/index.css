@@ -151,6 +151,75 @@ body {
   max-width: 340px;
 }
 
+.settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+.settings-section {
+  margin: 16px 0;
+}
+
+.settings-section-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.settings-section-desc {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.settings-section input,
+.settings-danger input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 15px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+.settings-danger {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.danger-button {
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.danger-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.danger-button:disabled {
+  background: #f3a8a8;
+  cursor: not-allowed;
+}
+
+.form-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
 .profile-info {
   display: flex;
   align-items: center;
@@ -748,5 +817,22 @@ body {
 
   .profile-dropdown-item:hover {
     background: #16203a;
+  }
+
+  .settings-section input,
+  .settings-danger input {
+    background: #0f172a;
+    color: var(--text);
+    border-color: var(--border);
+  }
+
+  .settings-danger {
+    border-color: #7c2626;
+  }
+
+  .form-success {
+    background: #12321f;
+    color: #4ade80;
+    border-color: #1f5c38;
   }
 }
