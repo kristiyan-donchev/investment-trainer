@@ -54,7 +54,7 @@ export default function PerformanceChart() {
   }));
 
   const latestRoi = chartData.length > 0 ? chartData[chartData.length - 1].roi : 0;
-  const lineColor = latestRoi >= 0 ? '#16a34a' : '#dc2626';
+  const lineColor = latestRoi >= 0 ? 'var(--green)' : 'var(--red)';
 
   return (
     <div className="price-chart">
@@ -70,17 +70,32 @@ export default function PerformanceChart() {
       {!loading && !errorMsg && chartData.length > 0 && (
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData}>
-            <XAxis dataKey="label" tick={{ fontSize: 11 }} minTickGap={30} />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={{ stroke: 'var(--border)' }}
+              tickLine={{ stroke: 'var(--border)' }}
+              minTickGap={30}
+            />
             <YAxis
               domain={['auto', 'auto']}
-              tick={{ fontSize: 11 }}
+              tick={{ fontSize: 11, fill: 'var(--muted)' }}
+              axisLine={{ stroke: 'var(--border)' }}
+              tickLine={{ stroke: 'var(--border)' }}
               width={54}
               tickFormatter={(v) => `${v.toFixed(1)}%`}
             />
             <RechartsTooltip
               formatter={(value, name) => (name === 'roi' ? [`${Number(value).toFixed(2)}%`, 'ROI'] : value)}
+              contentStyle={{
+                background: 'var(--panel-bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 8,
+                color: 'var(--text)',
+              }}
+              labelStyle={{ color: 'var(--muted)' }}
             />
-            <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
+            <ReferenceLine y={0} stroke="var(--muted)" strokeDasharray="3 3" />
             <Line type="monotone" dataKey="roi" stroke={lineColor} dot={false} strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
