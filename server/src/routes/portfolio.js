@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { getPortfolio, buyShares, sellShares, resetPortfolio, getPerformance } from '../lib/portfolio.js';
+import { getPortfolio, buyShares, sellShares, resetPortfolio, getPerformance, getLeaderboard } from '../lib/portfolio.js';
 
 const router = Router();
 
@@ -24,6 +24,16 @@ router.get('/performance', async (req, res) => {
   } catch (err) {
     console.error('performance error', err.message);
     res.status(502).json({ error: 'Could not load portfolio performance right now.' });
+  }
+});
+
+router.get('/leaderboard', async (req, res) => {
+  const range = PERFORMANCE_RANGES.includes(req.query.range) ? req.query.range : '1mo';
+  try {
+    res.json(await getLeaderboard(range));
+  } catch (err) {
+    console.error('leaderboard error', err.message);
+    res.status(502).json({ error: 'Could not load the leaderboard right now.' });
   }
 });
 
