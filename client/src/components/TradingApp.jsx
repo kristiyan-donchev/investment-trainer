@@ -1,25 +1,34 @@
 import { useCallback, useEffect, useState } from 'react';
-import Header from './Header.jsx';
+import Sidebar from './Sidebar.jsx';
 import Onboarding from './Onboarding.jsx';
-import SearchBar from './SearchBar.jsx';
-import PriceChart from './PriceChart.jsx';
-import PerformanceChart from './PerformanceChart.jsx';
-import Leaderboard from './Leaderboard.jsx';
-import TradePanel from './TradePanel.jsx';
-import PortfolioSummary from './PortfolioSummary.jsx';
-import HoldingsTable from './HoldingsTable.jsx';
-import TransactionHistory from './TransactionHistory.jsx';
+import DashboardPage from './DashboardPage.jsx';
+import LeaderboardPage from './LeaderboardPage.jsx';
+import LearnPage from './LearnPage.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
-import { STARTING_CASH, totalRealizedPnL } from '../lib/portfolio.js';
 
 const SEEN_ONBOARDING_KEY = 'investment-trainer-seen-onboarding';
 const QUOTE_REFRESH_MS = 20000;
 
+const PAGE_META = {
+  dashboard: {
+    title: 'Dashboard',
+    subtitle: 'Practice trading with real market prices — using 100% virtual money.',
+  },
+  leaderboard: {
+    title: 'Leaderboard',
+    subtitle: 'See how your portfolio return compares to other traders.',
+  },
+  learn: {
+    title: 'Learn',
+    subtitle: 'Beginner-friendly explanations of how investing and this simulator work.',
+  },
+};
+
 export default function TradingApp() {
   const { state, loading, buy, sell, reset, error } = usePortfolio();
+  const [page, setPage] = useState('dashboard');
   const [selectedSymbol, setSelectedSymbol] = useState(null);
-  const [selectedName, setSelectedName] = useState('');
   const [quotes, setQuotes] = useState({});
   const [quoteError, setQuoteError] = useState(null);
   const [showHelp, setShowHelp] = useState(() => !localStorage.getItem(SEEN_ONBOARDING_KEY));
@@ -50,7 +59,6 @@ export default function TradingApp() {
   function handleSelect(symbol, name) {
     setQuoteError(null);
     setSelectedSymbol(symbol);
-    setSelectedName(name);
     fetchQuote(symbol)
       .then((q) => setQuotes((prev) => ({ ...prev, [symbol]: q })))
       .catch((err) => setQuoteError(err.message));
@@ -61,18 +69,10 @@ export default function TradingApp() {
     setShowHelp(false);
   }
 
-  function handleGoHome() {
-    setSelectedSymbol(null);
-    setSelectedName('');
-    setQuoteError(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   async function handleReset() {
     if (window.confirm('This will erase your virtual cash, holdings, and transaction history. Continue?')) {
       await reset();
       setSelectedSymbol(null);
-      setSelectedName('');
       setQuotes({});
     }
   }
@@ -92,86 +92,45 @@ export default function TradingApp() {
 
   const selectedQuote = selectedSymbol ? quotes[selectedSymbol] : null;
   const selectedHolding = selectedSymbol ? state.holdings[selectedSymbol] : null;
+  const meta = PAGE_META[page];
 
   return (
-    <div className="app">
+    <div className="app-shell">
       {showHelp && <Onboarding onClose={closeHelp} />}
 
-      <Header onShowHelp={() => setShowHelp(true)} onReset={handleReset} onGoHome={handleGoHome} />
+      <Sidebar page={page} onNavigate={setPage} onShowHelp={() => setShowHelp(true)} onReset={handleReset} />
 
-      <PortfolioSummary
-        cash={state.cash}
-        holdingsValue={holdingsValue}
-        totalRealizedPnL={totalRealizedPnL(state.transactions)}
-        startingCash={STARTING_CASH}
-      />
+      <main className="main-content">
+        <div className="page-header">
+          <h1>{meta.title}</h1>
+          <p className="tagline">{meta.subtitle}</p>
+        </div>
 
-      <section className="panel">
-        <h2>Portfolio performance</h2>
-        <PerformanceChart />
-      </section>
-
-      <section className="panel">
-        <h2>Leaderboard</h2>
-        <Leaderboard />
-      </section>
-
-      <section className="panel">
-        <h2>Look up a stock</h2>
-        <SearchBar onSelect={handleSelect} />
-
-        {quoteError && <div className="form-error">{quoteError}</div>}
-
-        {selectedQuote && (
-          <div className="quote-block">
-            <div className="quote-heading">
-              <h3>
-                {selectedQuote.symbol} — {selectedQuote.name}
-              </h3>
-              <div className="quote-price">
-                ${selectedQuote.price.toFixed(2)}{' '}
-                <span className={selectedQuote.change >= 0 ? 'positive' : 'negative'}>
-                  {selectedQuote.change >= 0 ? '+' : ''}
-                  {selectedQuote.change?.toFixed(2)} ({selectedQuote.changePercent?.toFixed(2)}%)
-                </span>
-              </div>
-              <div className="quote-meta">
-                {selectedQuote.exchange} · Market: {selectedQuote.marketState}
-              </div>
-            </div>
-
-            <PriceChart symbol={selectedSymbol} />
-
-            <TradePanel
-              quote={selectedQuote}
-              holding={selectedHolding}
-              cash={state.cash}
-              onBuy={buy}
-              onSell={sell}
+        <div className="page-content">
+          {page === 'dashboard' && (
+            <DashboardPage
+              state={state}
+              holdingsValue={holdingsValue}
+              quotes={quotes}
+              quoteError={quoteError}
+              selectedSymbol={selectedSymbol}
+              selectedQuote={selectedQuote}
+              selectedHolding={selectedHolding}
+              onSelect={handleSelect}
+              buy={buy}
+              sell={sell}
               error={error}
             />
-          </div>
-        )}
+          )}
+          {page === 'leaderboard' && <LeaderboardPage />}
+          {page === 'learn' && <LearnPage />}
+        </div>
 
-        {!selectedQuote && !quoteError && (
-          <p className="empty-state">Search above and select a company to see its price and chart.</p>
-        )}
-      </section>
-
-      <section className="panel">
-        <h2>Your holdings</h2>
-        <HoldingsTable holdings={state.holdings} quotes={quotes} onSelect={handleSelect} />
-      </section>
-
-      <section className="panel">
-        <h2>Transaction history</h2>
-        <TransactionHistory transactions={state.transactions} />
-      </section>
-
-      <footer className="app-footer">
-        Investment Trainer is an educational paper-trading simulator. It is not a brokerage, does not
-        execute real trades, and is not financial advice.
-      </footer>
+        <footer className="app-footer">
+          Investment Trainer is an educational paper-trading simulator. It is not a brokerage, does not
+          execute real trades, and is not financial advice.
+        </footer>
+      </main>
     </div>
   );
 }
