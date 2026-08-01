@@ -81,6 +81,10 @@ export function fetchPerformance(range = '1mo') {
   return getJson(`${BASE}/portfolio/performance?range=${encodeURIComponent(range)}`);
 }
 
+export function fetchLeaderboard(range = '1mo') {
+  return getJson(`${BASE}/portfolio/leaderboard?range=${encodeURIComponent(range)}`);
+}
+
 export function updateUsername(username) {
   return postJson(`${BASE}/auth/username`, { username }).then((d) => d.user);
 }
