@@ -244,6 +244,108 @@ export async function getPerformance(userId, range) {
   return { range, startingCash: STARTING_CASH, points };
 }
 
+// Ranks every user by portfolio return over the requested window: (value now -
+// value at window start) / value at window start. For a user who joined after
+// the window start, the window is clamped to their signup (value at signup is
+// always exactly STARTING_CASH, before any trades), so 'all' naturally reduces
+// to total return since inception without needing a special case. Price
+// history is fetched once per symbol and shared across all users to avoid
+// hitting Yahoo once per user.
+export async function getLeaderboard(range) {
+  const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
+  const now = Date.now();
+
+  const usersResult = await pool.query(`SELECT id, username, created_at FROM users ORDER BY id`);
+  const users = usersResult.rows;
+  if (users.length === 0) return { range, leaderboard: [] };
+
+  const txResult = await pool.query(
+    `SELECT user_id, symbol, type, shares, price, timestamp FROM transactions ORDER BY user_id, timestamp ASC`
+  );
+  const txByUser = {};
+  for (const t of txResult.rows) {
+    if (!txByUser[t.user_id]) txByUser[t.user_id] = [];
+    txByUser[t.user_id].push(t);
+  }
+  const symbols = [...new Set(txResult.rows.map((t) => t.symbol))];
+
+  const rangeStart = config.days != null ? now - config.days * 24 * 60 * 60 * 1000 : null;
+  const earliestCreatedAt = Math.min(...users.map((u) => Number(u.created_at)));
+  const fetchPeriod1 = new Date(Math.min(rangeStart ?? earliestCreatedAt, earliestCreatedAt, now - 24 * 60 * 60 * 1000));
+  const period2 = new Date(now);
+
+  const priceHistories = {};
+  await Promise.all(
+    symbols.map(async (symbol) => {
+      try {
+        const chart = await yahooFinance.chart(symbol, {
+          period1: fetchPeriod1,
+          period2,
+          interval: config.interval,
+        });
+        priceHistories[symbol] = (chart.quotes || [])
+          .filter((q) => q.close != null)
+          .map((q) => ({ time: new Date(q.date).getTime(), close: q.close }));
+      } catch (err) {
+        console.error(`leaderboard: failed to fetch history for ${symbol}`, err.message);
+        priceHistories[symbol] = [];
+      }
+    })
+  );
+
+  function priceAt(symbol, time) {
+    const history = priceHistories[symbol];
+    if (!history || history.length === 0) return null;
+    let price = null;
+    for (const point of history) {
+      if (point.time > time) break;
+      price = point.close;
+    }
+    return price ?? history[0].close;
+  }
+
+  function valueAt(transactions, time) {
+    let cash = STARTING_CASH;
+    const shares = {};
+    for (const t of transactions) {
+      if (Number(t.timestamp) > time) break;
+      const qty = Number(t.shares);
+      if (t.type === 'BUY') {
+        cash -= qty * Number(t.price);
+        shares[t.symbol] = (shares[t.symbol] || 0) + qty;
+      } else {
+        cash += qty * Number(t.price);
+        shares[t.symbol] = (shares[t.symbol] || 0) - qty;
+      }
+    }
+    let holdingsValue = 0;
+    for (const [symbol, qty] of Object.entries(shares)) {
+      if (qty <= 1e-9) continue;
+      holdingsValue += qty * (priceAt(symbol, time) ?? 0);
+    }
+    return cash + holdingsValue;
+  }
+
+  const leaderboard = users.map((user) => {
+    const transactions = txByUser[user.id] || [];
+    const createdAt = Number(user.created_at);
+    const periodStart = rangeStart != null ? Math.max(rangeStart, createdAt) : createdAt;
+
+    const startValue = valueAt(transactions, periodStart);
+    const currentValue = valueAt(transactions, now);
+    const roiPercent = startValue > 0 ? ((currentValue - startValue) / startValue) * 100 : 0;
+
+    return { userId: user.id, username: user.username, value: currentValue, roiPercent };
+  });
+
+  leaderboard.sort((a, b) => b.roiPercent - a.roiPercent);
+  leaderboard.forEach((entry, i) => {
+    entry.rank = i + 1;
+  });
+
+  return { range, leaderboard: leaderboard.slice(0, 100) };
+}
+
 export async function resetPortfolio(userId) {
   const client = await pool.connect();
   try {
