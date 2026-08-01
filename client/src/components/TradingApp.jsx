@@ -4,6 +4,7 @@ import Onboarding from './Onboarding.jsx';
 import SearchBar from './SearchBar.jsx';
 import PriceChart from './PriceChart.jsx';
 import PerformanceChart from './PerformanceChart.jsx';
+import Leaderboard from './Leaderboard.jsx';
 import TradePanel from './TradePanel.jsx';
 import PortfolioSummary from './PortfolioSummary.jsx';
 import HoldingsTable from './HoldingsTable.jsx';
@@ -108,6 +109,11 @@ export default function TradingApp() {
       <section className="panel">
         <h2>Portfolio performance</h2>
         <PerformanceChart />
+      </section>
+
+      <section className="panel">
+        <h2>Leaderboard</h2>
+        <Leaderboard />
       </section>
 
       <section className="panel">
