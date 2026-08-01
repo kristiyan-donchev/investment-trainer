@@ -840,6 +840,29 @@ input {
   color: var(--muted);
 }
 
+.leaderboard {
+  margin-top: 4px;
+}
+
+.leaderboard-table th:last-child,
+.leaderboard-table td:last-child {
+  text-align: right;
+}
+
+.leaderboard-rank {
+  font-weight: 700;
+  color: var(--muted);
+  width: 56px;
+}
+
+.leaderboard-row-me {
+  background: var(--primary-soft);
+}
+
+.leaderboard-row-me td {
+  font-weight: 600;
+}
+
 .clickable-row {
   cursor: pointer;
   transition: background-color 0.12s var(--ease);
