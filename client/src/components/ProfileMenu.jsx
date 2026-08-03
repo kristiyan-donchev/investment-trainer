@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
@@ -173,173 +174,177 @@ export default function ProfileMenu({ onReset }) {
         </div>
       )}
 
-      {activeModal === 'profile' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Your profile</h2>
-              <button className="icon-button" onClick={() => setActiveModal(null)} aria-label="Close">
-                ✕
-              </button>
-            </div>
-
-            <div className="profile-info">
-              <div className="profile-avatar-large">{initial}</div>
-              <div>
-                <div className="profile-info-username">{user.username}</div>
-                <div className="profile-info-email">{user.email}</div>
-                {memberSince && <div className="profile-info-meta">Member since {memberSince}</div>}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeModal === 'settings' && (
-        <div className="modal-overlay" onClick={() => setActiveModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Settings</h2>
-              <button className="icon-button" onClick={() => setActiveModal(null)} aria-label="Close">
-                ✕
-              </button>
-            </div>
-
-            <div className="settings-section">
-              <div className="settings-section-title">Appearance</div>
-              <div className="settings-section-desc">Choose how Investment Trainer looks on this device.</div>
-              <div className="theme-switch" role="radiogroup" aria-label="Theme">
-                {THEME_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={mode === opt.value}
-                    className={mode === opt.value ? 'theme-switch-option active' : 'theme-switch-option'}
-                    onClick={() => setMode(opt.value)}
-                  >
-                    <span aria-hidden="true">{opt.icon}</span>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="settings-divider" />
-
-            <div className="settings-section">
-              <div className="settings-section-title">Change username</div>
-              <form onSubmit={handleUsernameSubmit}>
-                <input
-                  type="text"
-                  value={usernameInput}
-                  onChange={(e) => {
-                    setUsernameInput(e.target.value);
-                    setUsernameSuccess(false);
-                  }}
-                  minLength={3}
-                  maxLength={24}
-                  required
-                />
-                {usernameError && <div className="form-error">{usernameError}</div>}
-                {usernameSuccess && <div className="form-success">Username updated.</div>}
-                <button
-                  type="submit"
-                  className="secondary-button"
-                  disabled={usernameSaving || usernameInput.trim() === user.username}
-                >
-                  {usernameSaving ? 'Saving…' : 'Save username'}
+      {activeModal === 'profile' &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Your profile</h2>
+                <button className="icon-button" onClick={() => setActiveModal(null)} aria-label="Close">
+                  ✕
                 </button>
-              </form>
-            </div>
-
-            <div className="settings-divider" />
-
-            <div className="settings-section">
-              <div className="settings-section-title">{user.hasPassword ? 'Change password' : 'Set a password'}</div>
-              <div className="settings-section-desc">
-                {user.hasPassword
-                  ? 'Update the password you use to sign in.'
-                  : 'Your account currently signs in with Google only. Set a password to also sign in with your username.'}
               </div>
-              <form onSubmit={handlePasswordSubmit}>
-                {user.hasPassword && (
-                  <input
-                    type="password"
-                    placeholder="Current password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                  />
-                )}
-                <input
-                  type="password"
-                  placeholder="New password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={8}
-                  required
-                />
-                {passwordError && <div className="form-error">{passwordError}</div>}
-                {passwordSuccess && <div className="form-success">Password updated.</div>}
-                <button type="submit" className="secondary-button" disabled={passwordSaving}>
-                  {passwordSaving ? 'Saving…' : user.hasPassword ? 'Update password' : 'Set password'}
-                </button>
-              </form>
-            </div>
 
-            <div className="settings-divider" />
-
-            <div className="settings-item">
-              <div>
-                <div className="settings-item-title">Reset simulator</div>
-                <div className="settings-item-desc">
-                  Erases your virtual cash, holdings, and transaction history, and starts you over with
-                  $10,000.
+              <div className="profile-info">
+                <div className="profile-avatar-large">{initial}</div>
+                <div>
+                  <div className="profile-info-username">{user.username}</div>
+                  <div className="profile-info-email">{user.email}</div>
+                  {memberSince && <div className="profile-info-meta">Member since {memberSince}</div>}
                 </div>
               </div>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => {
-                  setActiveModal(null);
-                  onReset();
-                }}
-              >
-                Reset
-              </button>
             </div>
+          </div>,
+          document.body
+        )}
 
-            <div className="settings-divider" />
-
-            <div className="settings-danger">
-              <div className="settings-section-title">Delete account</div>
-              <div className="settings-section-desc">
-                This permanently deletes your account, cash, holdings, and transaction history. This
-                cannot be undone. Type <strong>{user.username}</strong> to confirm.
+      {activeModal === 'settings' &&
+        createPortal(
+          <div className="modal-overlay" onClick={() => setActiveModal(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>Settings</h2>
+                <button className="icon-button" onClick={() => setActiveModal(null)} aria-label="Close">
+                  ✕
+                </button>
               </div>
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={(e) => {
-                  setDeleteConfirmText(e.target.value);
-                  setDeleteError(null);
-                }}
-                placeholder={user.username}
-              />
-              {deleteError && <div className="form-error">{deleteError}</div>}
-              <button
-                type="button"
-                className="danger-button"
-                disabled={deleteConfirmText !== user.username || deleting}
-                onClick={handleDelete}
-              >
-                {deleting ? 'Deleting…' : 'Delete account'}
-              </button>
+
+              <div className="settings-section">
+                <div className="settings-section-title">Appearance</div>
+                <div className="settings-section-desc">Choose how Investment Trainer looks on this device.</div>
+                <div className="theme-switch" role="radiogroup" aria-label="Theme">
+                  {THEME_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={mode === opt.value}
+                      className={mode === opt.value ? 'theme-switch-option active' : 'theme-switch-option'}
+                      onClick={() => setMode(opt.value)}
+                    >
+                      <span aria-hidden="true">{opt.icon}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-divider" />
+
+              <div className="settings-section">
+                <div className="settings-section-title">Change username</div>
+                <form onSubmit={handleUsernameSubmit}>
+                  <input
+                    type="text"
+                    value={usernameInput}
+                    onChange={(e) => {
+                      setUsernameInput(e.target.value);
+                      setUsernameSuccess(false);
+                    }}
+                    minLength={3}
+                    maxLength={24}
+                    required
+                  />
+                  {usernameError && <div className="form-error">{usernameError}</div>}
+                  {usernameSuccess && <div className="form-success">Username updated.</div>}
+                  <button
+                    type="submit"
+                    className="secondary-button"
+                    disabled={usernameSaving || usernameInput.trim() === user.username}
+                  >
+                    {usernameSaving ? 'Saving…' : 'Save username'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="settings-divider" />
+
+              <div className="settings-section">
+                <div className="settings-section-title">{user.hasPassword ? 'Change password' : 'Set a password'}</div>
+                <div className="settings-section-desc">
+                  {user.hasPassword
+                    ? 'Update the password you use to sign in.'
+                    : 'Your account currently signs in with Google only. Set a password to also sign in with your username.'}
+                </div>
+                <form onSubmit={handlePasswordSubmit}>
+                  {user.hasPassword && (
+                    <input
+                      type="password"
+                      placeholder="Current password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      required
+                    />
+                  )}
+                  <input
+                    type="password"
+                    placeholder="New password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    minLength={8}
+                    required
+                  />
+                  {passwordError && <div className="form-error">{passwordError}</div>}
+                  {passwordSuccess && <div className="form-success">Password updated.</div>}
+                  <button type="submit" className="secondary-button" disabled={passwordSaving}>
+                    {passwordSaving ? 'Saving…' : user.hasPassword ? 'Update password' : 'Set password'}
+                  </button>
+                </form>
+              </div>
+
+              <div className="settings-divider" />
+
+              <div className="settings-item">
+                <div>
+                  <div className="settings-item-title">Reset simulator</div>
+                  <div className="settings-item-desc">
+                    Erases your virtual cash, holdings, and transaction history, and starts you over with
+                    $10,000.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    setActiveModal(null);
+                    onReset();
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="settings-divider" />
+
+              <div className="settings-danger">
+                <div className="settings-section-title">Delete account</div>
+                <div className="settings-section-desc">
+                  This permanently deletes your account, cash, holdings, and transaction history. This
+                  cannot be undone. Type <strong>{user.username}</strong> to confirm.
+                </div>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => {
+                    setDeleteConfirmText(e.target.value);
+                    setDeleteError(null);
+                  }}
+                  placeholder={user.username}
+                />
+                {deleteError && <div className="form-error">{deleteError}</div>}
+                <button
+                  type="button"
+                  className="danger-button"
+                  disabled={deleteConfirmText !== user.username || deleting}
+                  onClick={handleDelete}
+                >
+                  {deleting ? 'Deleting…' : 'Delete account'}
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
