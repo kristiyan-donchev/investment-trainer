@@ -123,13 +123,16 @@ export default function ProfileMenu({ onReset }) {
     <div className="profile-menu" ref={menuRef}>
       <button
         type="button"
-        className="profile-button"
+        className="profile-account-button"
         onClick={() => setMenuOpen((o) => !o)}
         aria-label="Account menu"
         aria-haspopup="menu"
         aria-expanded={menuOpen}
       >
-        {initial}
+        <span className="profile-avatar" aria-hidden="true">
+          {initial}
+        </span>
+        <span className="profile-account-name">{user.username}</span>
       </button>
 
       {menuOpen && (
