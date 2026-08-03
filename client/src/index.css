@@ -181,21 +181,6 @@ input {
   border-top: 1px solid var(--border);
 }
 
-.sidebar-account {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-}
-
-.sidebar-username {
-  font-size: 14px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .sidebar-footer .profile-dropdown {
   top: auto;
   bottom: calc(100% + 8px);
@@ -276,8 +261,12 @@ input {
     gap: 4px;
   }
 
-  .sidebar-username {
+  .profile-account-name {
     display: none;
+  }
+
+  .profile-account-button {
+    padding: 6px;
   }
 
   .sidebar-footer .profile-dropdown {
@@ -297,27 +286,47 @@ input {
   position: relative;
 }
 
-.profile-button {
-  width: 36px;
-  height: 36px;
+.profile-account-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  transition: background-color 0.15s var(--ease);
+}
+
+.profile-account-button:hover {
+  background: var(--panel-bg-hover);
+}
+
+.profile-avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--primary);
   color: white;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.15s var(--ease), transform 0.1s var(--ease);
 }
 
-.profile-button:hover {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
+.profile-account-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .profile-dropdown {
