@@ -1,4 +1,3 @@
-import { useAuth } from '../context/AuthContext.jsx';
 import ProfileMenu from './ProfileMenu.jsx';
 
 const NAV_ITEMS = [
@@ -8,8 +7,6 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
-  const { user } = useAuth();
-
   return (
     <nav className="sidebar">
       <button type="button" className="sidebar-logo" onClick={() => onNavigate('dashboard')}>
@@ -43,10 +40,7 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
           <span className="sidebar-nav-label">Help &amp; terms</span>
         </button>
 
-        <div className="sidebar-account">
-          <ProfileMenu onReset={onReset} />
-          {user && <span className="sidebar-username">{user.username}</span>}
-        </div>
+        <ProfileMenu onReset={onReset} />
       </div>
     </nav>
   );
