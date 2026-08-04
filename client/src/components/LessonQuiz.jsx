@@ -1,0 +1,69 @@
+import { useEffect, useState } from 'react';
+
+export default function LessonQuiz({ questions, onAllCorrect }) {
+  const [selected, setSelected] = useState({});
+  const [solved, setSolved] = useState({});
+
+  useEffect(() => {
+    setSelected({});
+    setSolved({});
+  }, [questions]);
+
+  function choose(qIndex, optIndex) {
+    if (solved[qIndex]) return;
+    setSelected((prev) => ({ ...prev, [qIndex]: optIndex }));
+    if (optIndex === questions[qIndex].correctIndex) {
+      setSolved((prev) => ({ ...prev, [qIndex]: true }));
+    }
+  }
+
+  const allCorrect = questions.length > 0 && questions.every((_, i) => solved[i]);
+
+  useEffect(() => {
+    if (allCorrect) onAllCorrect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allCorrect]);
+
+  if (questions.length === 0) return null;
+
+  return (
+    <div className="lesson-quiz">
+      <h3>Check your understanding</h3>
+      {questions.map((q, qIndex) => {
+        const pickedIndex = selected[qIndex];
+        const isSolved = solved[qIndex];
+        return (
+          <div className="quiz-question" key={qIndex}>
+            <p className="quiz-question-text">{q.question}</p>
+            <div className="quiz-options">
+              {q.options.map((option, optIndex) => {
+                const isPicked = pickedIndex === optIndex;
+                let stateClass = '';
+                if (isPicked && optIndex === q.correctIndex) stateClass = 'correct';
+                else if (isPicked) stateClass = 'incorrect';
+                return (
+                  <button
+                    key={optIndex}
+                    type="button"
+                    className={`quiz-option ${stateClass}`}
+                    onClick={() => choose(qIndex, optIndex)}
+                    disabled={isSolved}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+            {pickedIndex != null && (
+              <p className={isSolved ? 'quiz-feedback correct' : 'quiz-feedback incorrect'}>
+                {isSolved ? '✓ Correct — ' : '✗ Not quite — '}
+                {q.explanation}
+              </p>
+            )}
+          </div>
+        );
+      })}
+      {allCorrect && <p className="quiz-complete">🎉 Lesson complete — nice work!</p>}
+    </div>
+  );
+}
