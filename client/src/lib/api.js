@@ -31,6 +31,15 @@ async function postJson(url, body) {
   return data;
 }
 
+async function deleteJson(url) {
+  const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || `Request failed: ${res.status}`);
+  }
+  return data;
+}
+
 export function searchSymbols(query) {
   return getJson(`${BASE}/search?q=${encodeURIComponent(query)}`).then((d) => d.results || []);
 }
@@ -81,8 +90,54 @@ export function fetchPerformance(range = '1mo') {
   return getJson(`${BASE}/portfolio/performance?range=${encodeURIComponent(range)}`);
 }
 
-export function fetchLeaderboard(range = '1mo') {
-  return getJson(`${BASE}/portfolio/leaderboard?range=${encodeURIComponent(range)}`);
+export function fetchLeaderboard(range = '1mo', category = 'return') {
+  return getJson(
+    `${BASE}/portfolio/leaderboard?range=${encodeURIComponent(range)}&category=${encodeURIComponent(category)}`
+  );
+}
+
+export function fetchWatchlist() {
+  return getJson(`${BASE}/watchlist`).then((d) => d.watchlist || []);
+}
+
+export function addToWatchlist({ symbol, name }) {
+  return postJson(`${BASE}/watchlist`, { symbol, name }).then((d) => d.watchlist || []);
+}
+
+export function removeFromWatchlist(symbol) {
+  return deleteJson(`${BASE}/watchlist/${encodeURIComponent(symbol)}`).then((d) => d.watchlist || []);
+}
+
+export function fetchAlerts() {
+  return getJson(`${BASE}/alerts`).then((d) => d.alerts || []);
+}
+
+export function fetchUnseenAlertCount() {
+  return getJson(`${BASE}/alerts/unseen-count`).then((d) => d.count || 0);
+}
+
+export function createAlert({ symbol, name, direction, targetPrice }) {
+  return postJson(`${BASE}/alerts`, { symbol, name, direction, targetPrice }).then((d) => d.alerts || []);
+}
+
+export function cancelAlert(id) {
+  return deleteJson(`${BASE}/alerts/${id}`).then((d) => d.alerts || []);
+}
+
+export function fetchOrders() {
+  return getJson(`${BASE}/orders`).then((d) => d.orders || []);
+}
+
+export function placeOrder(order) {
+  return postJson(`${BASE}/orders`, order).then((d) => d.orders || []);
+}
+
+export function cancelOrder(id) {
+  return postJson(`${BASE}/orders/${id}/cancel`, {}).then((d) => d.orders || []);
+}
+
+export function fetchAchievements() {
+  return getJson(`${BASE}/achievements`).then((d) => d.achievements || []);
 }
 
 export function updateUsername(username) {

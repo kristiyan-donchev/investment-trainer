@@ -1,12 +1,36 @@
+import { useEffect, useState } from 'react';
 import ProfileMenu from './ProfileMenu.jsx';
+import { fetchUnseenAlertCount } from '../lib/api.js';
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
+  { key: 'watchlist', label: 'Watchlist', icon: '👁️' },
   { key: 'learn', label: 'Learn', icon: '🎓' },
 ];
 
+const UNSEEN_ALERT_POLL_MS = 30000;
+
 export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
+  const [unseenAlerts, setUnseenAlerts] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    function poll() {
+      fetchUnseenAlertCount()
+        .then((count) => {
+          if (!cancelled) setUnseenAlerts(count);
+        })
+        .catch(() => {});
+    }
+    poll();
+    const interval = setInterval(poll, UNSEEN_ALERT_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [page]);
+
   return (
     <nav className="sidebar">
       <button type="button" className="sidebar-logo" onClick={() => onNavigate('dashboard')}>
@@ -28,6 +52,9 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
               {item.icon}
             </span>
             <span className="sidebar-nav-label">{item.label}</span>
+            {item.key === 'watchlist' && unseenAlerts > 0 && (
+              <span className="sidebar-nav-badge">{unseenAlerts}</span>
+            )}
           </button>
         ))}
       </div>

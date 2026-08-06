@@ -1,10 +1,15 @@
 import SearchBar from './SearchBar.jsx';
 import PriceChart from './PriceChart.jsx';
 import PerformanceChart from './PerformanceChart.jsx';
+import PortfolioBreakdown from './PortfolioBreakdown.jsx';
 import TradePanel from './TradePanel.jsx';
+import OrdersPanel from './OrdersPanel.jsx';
+import CreateAlertForm from './CreateAlertForm.jsx';
 import PortfolioSummary from './PortfolioSummary.jsx';
 import HoldingsTable from './HoldingsTable.jsx';
 import TransactionHistory from './TransactionHistory.jsx';
+import { useOrders } from '../hooks/useOrders.js';
+import { useWatchlist } from '../hooks/useWatchlist.js';
 import { STARTING_CASH, totalRealizedPnL } from '../lib/portfolio.js';
 
 export default function DashboardPage({
@@ -20,6 +25,11 @@ export default function DashboardPage({
   sell,
   error,
 }) {
+  const { orders, loading: ordersLoading, error: ordersError, place: placeOrder, cancel: cancelOrder } = useOrders();
+  const { isWatching, add: watch, remove: unwatch } = useWatchlist();
+
+  const watching = selectedQuote ? isWatching(selectedQuote.symbol) : false;
+
   return (
     <>
       <PortfolioSummary
@@ -32,6 +42,11 @@ export default function DashboardPage({
       <section className="panel">
         <h2>Portfolio performance</h2>
         <PerformanceChart />
+      </section>
+
+      <section className="panel">
+        <h2>Portfolio breakdown</h2>
+        <PortfolioBreakdown cash={state.cash} holdings={state.holdings} quotes={quotes} />
       </section>
 
       <section className="panel">
@@ -59,6 +74,18 @@ export default function DashboardPage({
                   ? 'Trades 24/7 · always open'
                   : `${selectedQuote.exchange} · Market: ${selectedQuote.marketState}`}
               </div>
+              <div className="quote-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() =>
+                    watching ? unwatch(selectedQuote.symbol) : watch(selectedQuote.symbol, selectedQuote.name)
+                  }
+                >
+                  {watching ? '★ Watching' : '☆ Watch'}
+                </button>
+                <CreateAlertForm symbol={selectedQuote.symbol} name={selectedQuote.name} />
+              </div>
             </div>
 
             <PriceChart symbol={selectedSymbol} />
@@ -69,6 +96,7 @@ export default function DashboardPage({
               cash={state.cash}
               onBuy={buy}
               onSell={sell}
+              onPlaceOrder={placeOrder}
               error={error}
             />
           </div>
@@ -82,6 +110,11 @@ export default function DashboardPage({
       <section className="panel">
         <h2>Your holdings</h2>
         <HoldingsTable holdings={state.holdings} quotes={quotes} onSelect={onSelect} />
+      </section>
+
+      <section className="panel">
+        <h2>Open orders</h2>
+        <OrdersPanel orders={orders} loading={ordersLoading} error={ordersError} onCancel={cancelOrder} />
       </section>
 
       <section className="panel">

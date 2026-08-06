@@ -3,6 +3,7 @@ import Sidebar from './Sidebar.jsx';
 import Onboarding from './Onboarding.jsx';
 import DashboardPage from './DashboardPage.jsx';
 import LeaderboardPage from './LeaderboardPage.jsx';
+import WatchlistPage from './WatchlistPage.jsx';
 import LearnPage from './LearnPage.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
@@ -18,6 +19,10 @@ const PAGE_META = {
   leaderboard: {
     title: 'Leaderboard',
     subtitle: 'See how your portfolio return compares to other traders.',
+  },
+  watchlist: {
+    title: 'Watchlist',
+    subtitle: 'Track symbols you care about and get notified when they hit your price.',
   },
   learn: {
     title: 'Learn',
@@ -62,6 +67,13 @@ export default function TradingApp() {
     fetchQuote(symbol)
       .then((q) => setQuotes((prev) => ({ ...prev, [symbol]: q })))
       .catch((err) => setQuoteError(err.message));
+  }
+
+  // Selecting a watched symbol should jump to the Dashboard, since that's
+  // where the quote, chart, and trade panel actually live.
+  function handleSelectFromWatchlist(symbol, name) {
+    handleSelect(symbol, name);
+    setPage('dashboard');
   }
 
   function closeHelp() {
@@ -123,6 +135,7 @@ export default function TradingApp() {
             />
           )}
           {page === 'leaderboard' && <LeaderboardPage />}
+          {page === 'watchlist' && <WatchlistPage onSelectSymbol={handleSelectFromWatchlist} />}
           {page === 'learn' && <LearnPage />}
         </div>
 

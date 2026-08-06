@@ -1,31 +1,80 @@
 import { useState } from 'react';
 import Tooltip from './Tooltip.jsx';
 
-export default function TradePanel({ quote, holding, cash, onBuy, onSell, error }) {
+const ORDER_TYPE_LABELS = {
+  MARKET: 'market order',
+  LIMIT: 'limit order',
+  STOP: 'stop order',
+  STOP_LIMIT: 'stop-limit order',
+};
+
+const ORDER_TYPE_TOOLTIPS = {
+  MARKET: 'An order to buy or sell immediately at the current market price.',
+  LIMIT: 'An order that only fills at your chosen price or better — it may not fill right away, or at all.',
+  STOP: 'An order that becomes a market order once the price crosses your stop price.',
+  STOP_LIMIT: 'An order that becomes a limit order once the price crosses your stop price.',
+};
+
+export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlaceOrder, error }) {
   const [shares, setShares] = useState('');
   const [side, setSide] = useState('BUY');
+  const [orderType, setOrderType] = useState('MARKET');
+  const [limitPrice, setLimitPrice] = useState('');
+  const [stopPrice, setStopPrice] = useState('');
+  const [placed, setPlaced] = useState(false);
 
   if (!quote) return null;
 
   const sharesNum = Number(shares);
-  const estimatedTotal = sharesNum > 0 ? sharesNum * quote.price : 0;
-  const canSubmit = sharesNum > 0 && Number.isFinite(sharesNum);
+  const limitPriceNum = Number(limitPrice);
+  const stopPriceNum = Number(stopPrice);
+
+  const needsLimit = orderType === 'LIMIT' || orderType === 'STOP_LIMIT';
+  const needsStop = orderType === 'STOP' || orderType === 'STOP_LIMIT';
+
+  const referencePrice = orderType === 'STOP' ? stopPriceNum : needsLimit ? limitPriceNum : quote.price;
+  const estimatedTotal = sharesNum > 0 && referencePrice > 0 ? sharesNum * referencePrice : 0;
+
+  const canSubmit =
+    sharesNum > 0 &&
+    Number.isFinite(sharesNum) &&
+    (!needsLimit || limitPriceNum > 0) &&
+    (!needsStop || stopPriceNum > 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!canSubmit) return;
-    const order = { symbol: quote.symbol, name: quote.name, shares: sharesNum, price: quote.price };
-    const ok = side === 'BUY' ? await onBuy(order) : await onSell(order);
-    if (ok) setShares('');
+    setPlaced(false);
+
+    if (orderType === 'MARKET') {
+      const order = { symbol: quote.symbol, name: quote.name, shares: sharesNum, price: quote.price };
+      const ok = side === 'BUY' ? await onBuy(order) : await onSell(order);
+      if (ok) setShares('');
+      return;
+    }
+
+    const ok = await onPlaceOrder({
+      symbol: quote.symbol,
+      name: quote.name,
+      side,
+      orderType,
+      shares: sharesNum,
+      limitPrice: needsLimit ? limitPriceNum : null,
+      stopPrice: needsStop ? stopPriceNum : null,
+    });
+    if (ok) {
+      setShares('');
+      setLimitPrice('');
+      setStopPrice('');
+      setPlaced(true);
+    }
   }
 
   return (
     <form className="trade-panel" onSubmit={handleSubmit}>
       <h3>
         Place a simulated{' '}
-        <Tooltip term="An order to buy or sell immediately at the current market price.">
-          market order
-        </Tooltip>
+        <Tooltip term={ORDER_TYPE_TOOLTIPS[orderType]}>{ORDER_TYPE_LABELS[orderType]}</Tooltip>
       </h3>
 
       <div className="trade-side-toggle">
@@ -46,6 +95,16 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, error 
       </div>
 
       <label className="field">
+        <span>Order type</span>
+        <select value={orderType} onChange={(e) => setOrderType(e.target.value)}>
+          <option value="MARKET">Market</option>
+          <option value="LIMIT">Limit</option>
+          <option value="STOP">Stop</option>
+          <option value="STOP_LIMIT">Stop-limit</option>
+        </select>
+      </label>
+
+      <label className="field">
         <span>Shares</span>
         <input
           type="number"
@@ -57,12 +116,41 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, error 
         />
       </label>
 
+      {needsStop && (
+        <label className="field">
+          <span>Stop price</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={stopPrice}
+            onChange={(e) => setStopPrice(e.target.value)}
+            placeholder="0.00"
+          />
+        </label>
+      )}
+
+      {needsLimit && (
+        <label className="field">
+          <span>Limit price</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={limitPrice}
+            onChange={(e) => setLimitPrice(e.target.value)}
+            placeholder="0.00"
+          />
+        </label>
+      )}
+
       <div className="trade-meta">
         <div>
           Current price: <strong>${quote.price.toFixed(2)}</strong>
         </div>
         <div>
-          Estimated {side === 'BUY' ? 'cost' : 'proceeds'}: <strong>${estimatedTotal.toFixed(2)}</strong>
+          Estimated {side === 'BUY' ? 'cost' : 'proceeds'}
+          {orderType !== 'MARKET' ? ' if filled' : ''}: <strong>${estimatedTotal.toFixed(2)}</strong>
         </div>
         {side === 'BUY' && (
           <div>
@@ -77,9 +165,12 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, error 
       </div>
 
       {error && <div className="form-error">{error}</div>}
+      {placed && <div className="form-success">Order placed — track it in "Open orders" below.</div>}
 
       <button type="submit" className="primary-button" disabled={!canSubmit}>
-        {side === 'BUY' ? 'Buy' : 'Sell'} {shares || 0} share(s) of {quote.symbol}
+        {orderType === 'MARKET'
+          ? `${side === 'BUY' ? 'Buy' : 'Sell'} ${shares || 0} share(s) of ${quote.symbol}`
+          : `Place ${side === 'BUY' ? 'buy' : 'sell'} ${ORDER_TYPE_LABELS[orderType]}`}
       </button>
       <p className="disclaimer-inline">Simulated only — no real money or brokerage is involved.</p>
     </form>

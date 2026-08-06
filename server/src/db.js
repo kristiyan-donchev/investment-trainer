@@ -59,5 +59,50 @@ export async function initSchema() {
       realized_pnl DOUBLE PRECISION,
       timestamp BIGINT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS watchlist (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      symbol TEXT NOT NULL,
+      name TEXT NOT NULL,
+      added_at BIGINT NOT NULL,
+      UNIQUE(user_id, symbol)
+    );
+
+    CREATE TABLE IF NOT EXISTS price_alerts (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      symbol TEXT NOT NULL,
+      name TEXT NOT NULL,
+      direction TEXT NOT NULL, -- 'above' | 'below'
+      target_price DOUBLE PRECISION NOT NULL,
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at BIGINT NOT NULL,
+      triggered_at BIGINT,
+      triggered_price DOUBLE PRECISION,
+      seen BOOLEAN NOT NULL DEFAULT TRUE
+    );
+
+    -- Limit/stop/stop-limit orders. Unlike market orders (executed inline in
+    -- buyShares/sellShares), these sit PENDING until a scheduled job in
+    -- index.js sees the trigger condition met and fills them at the then-
+    -- current price via the same buyShares/sellShares functions.
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      symbol TEXT NOT NULL,
+      name TEXT NOT NULL,
+      side TEXT NOT NULL, -- 'BUY' | 'SELL'
+      order_type TEXT NOT NULL, -- 'LIMIT' | 'STOP' | 'STOP_LIMIT'
+      shares DOUBLE PRECISION NOT NULL,
+      limit_price DOUBLE PRECISION,
+      stop_price DOUBLE PRECISION,
+      stop_triggered BOOLEAN NOT NULL DEFAULT FALSE,
+      status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING' | 'FILLED' | 'CANCELLED'
+      created_at BIGINT NOT NULL,
+      filled_at BIGINT,
+      filled_price DOUBLE PRECISION,
+      cancel_reason TEXT
+    );
   `);
 }
