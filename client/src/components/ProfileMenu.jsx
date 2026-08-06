@@ -257,22 +257,26 @@ export default function ProfileMenu({ onReset }) {
                       ))}
                     </div>
 
-                    {selectedAchievement && (
-                      <div className="achievement-detail">
-                        <div className="achievement-detail-header">
-                          <span className="achievement-icon" aria-hidden="true">
-                            {selectedAchievement.icon}
-                          </span>
-                          <strong>{selectedAchievement.title}</strong>
-                        </div>
-                        <p className="achievement-detail-desc">How to earn it: {selectedAchievement.description}</p>
-                        <p className={selectedAchievement.unlocked ? 'achievement-detail-status earned' : 'achievement-detail-status'}>
-                          {selectedAchievement.unlocked
-                            ? `✓ Earned on ${formatEarnedDate(selectedAchievement.earnedAt)}`
-                            : 'Not yet earned'}
-                        </p>
-                      </div>
-                    )}
+                    <div className="achievement-detail">
+                      {selectedAchievement ? (
+                        <>
+                          <div className="achievement-detail-header">
+                            <span className="achievement-icon" aria-hidden="true">
+                              {selectedAchievement.icon}
+                            </span>
+                            <strong>{selectedAchievement.title}</strong>
+                          </div>
+                          <p className="achievement-detail-desc">How to earn it: {selectedAchievement.description}</p>
+                          <p className={selectedAchievement.unlocked ? 'achievement-detail-status earned' : 'achievement-detail-status'}>
+                            {selectedAchievement.unlocked
+                              ? `✓ Earned on ${formatEarnedDate(selectedAchievement.earnedAt)}`
+                              : 'Not yet earned'}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="achievement-detail-placeholder">Tap a badge to see how to earn it.</p>
+                      )}
+                    </div>
                   </>
                 )}
               </div>

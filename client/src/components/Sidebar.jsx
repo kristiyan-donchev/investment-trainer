@@ -5,8 +5,8 @@ import { fetchUnseenAlertCount } from '../lib/api.js';
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'learn', label: 'Learn', icon: '🎓' },
-  { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
   { key: 'watchlist', label: 'Watchlist', icon: '👁️' },
+  { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
 ];
 
 const UNSEEN_ALERT_POLL_MS = 30000;

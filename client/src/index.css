@@ -1640,6 +1640,17 @@ input {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--panel-bg-hover);
+  min-height: 84px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.achievement-detail-placeholder {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
 }
 
 .achievement-detail-header {
