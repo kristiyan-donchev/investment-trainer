@@ -1144,6 +1144,7 @@ input {
   background: var(--panel-bg);
   border-radius: var(--radius-lg);
   padding: 24px;
+  width: 100%;
   max-width: 560px;
   max-height: 85vh;
   overflow-y: auto;
@@ -1640,7 +1641,7 @@ input {
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   background: var(--panel-bg-hover);
-  min-height: 84px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
   justify-content: center;
