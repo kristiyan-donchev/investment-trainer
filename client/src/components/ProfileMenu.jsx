@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { fetchAchievements } from '../lib/api.js';
 
 const THEME_OPTIONS = [
   { value: 'light', label: 'Light', icon: '☀️' },
@@ -39,6 +40,19 @@ export default function ProfileMenu({ onReset }) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteError, setDeleteError] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [achievements, setAchievements] = useState([]);
+  const [achievementsLoading, setAchievementsLoading] = useState(true);
+
+  useEffect(() => {
+    if (activeModal === 'profile') {
+      setAchievementsLoading(true);
+      fetchAchievements()
+        .then(setAchievements)
+        .catch(() => setAchievements([]))
+        .finally(() => setAchievementsLoading(false));
+    }
+  }, [activeModal]);
 
   useEffect(() => {
     if (activeModal === 'settings' && user) {
@@ -192,6 +206,37 @@ export default function ProfileMenu({ onReset }) {
                   <div className="profile-info-email">{user.email}</div>
                   {memberSince && <div className="profile-info-meta">Member since {memberSince}</div>}
                 </div>
+              </div>
+
+              <div className="settings-divider" />
+
+              <div className="settings-section">
+                <div className="settings-section-title">
+                  Achievements
+                  {!achievementsLoading && (
+                    <span className="achievements-count">
+                      {achievements.filter((a) => a.unlocked).length}/{achievements.length}
+                    </span>
+                  )}
+                </div>
+                {achievementsLoading ? (
+                  <p className="empty-state">Loading achievements…</p>
+                ) : (
+                  <div className="achievements-grid">
+                    {achievements.map((a) => (
+                      <div
+                        key={a.id}
+                        className={a.unlocked ? 'achievement-badge unlocked' : 'achievement-badge'}
+                        title={a.description}
+                      >
+                        <span className="achievement-icon" aria-hidden="true">
+                          {a.icon}
+                        </span>
+                        <span className="achievement-title">{a.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>,
