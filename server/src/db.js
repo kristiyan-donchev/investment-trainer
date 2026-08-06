@@ -104,5 +104,17 @@ export async function initSchema() {
       filled_price DOUBLE PRECISION,
       cancel_reason TEXT
     );
+
+    -- Most achievements' earned-at date is computed on the fly from
+    -- transactions/holdings history (see lib/achievements.js) — no need to
+    -- store it. The one exception is "reach #1 on the leaderboard", since
+    -- rank isn't part of any historical record; the first time it's observed
+    -- true, it's recorded here so the date doesn't change on later checks.
+    CREATE TABLE IF NOT EXISTS achievement_unlocks (
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      achievement_id TEXT NOT NULL,
+      earned_at BIGINT NOT NULL,
+      PRIMARY KEY (user_id, achievement_id)
+    );
   `);
 }

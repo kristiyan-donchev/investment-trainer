@@ -19,6 +19,15 @@ function formatMemberSince(createdAt) {
   });
 }
 
+function formatEarnedDate(earnedAt) {
+  if (!earnedAt) return null;
+  return new Date(earnedAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 export default function ProfileMenu({ onReset }) {
   const { user, logout, updateUsername, changePassword, deleteAccount } = useAuth();
   const { mode, setMode } = useTheme();
@@ -43,16 +52,20 @@ export default function ProfileMenu({ onReset }) {
 
   const [achievements, setAchievements] = useState([]);
   const [achievementsLoading, setAchievementsLoading] = useState(true);
+  const [selectedAchievementId, setSelectedAchievementId] = useState(null);
 
   useEffect(() => {
     if (activeModal === 'profile') {
       setAchievementsLoading(true);
+      setSelectedAchievementId(null);
       fetchAchievements()
         .then(setAchievements)
         .catch(() => setAchievements([]))
         .finally(() => setAchievementsLoading(false));
     }
   }, [activeModal]);
+
+  const selectedAchievement = achievements.find((a) => a.id === selectedAchievementId) || null;
 
   useEffect(() => {
     if (activeModal === 'settings' && user) {
@@ -222,20 +235,45 @@ export default function ProfileMenu({ onReset }) {
                 {achievementsLoading ? (
                   <p className="empty-state">Loading achievements…</p>
                 ) : (
-                  <div className="achievements-grid">
-                    {achievements.map((a) => (
-                      <div
-                        key={a.id}
-                        className={a.unlocked ? 'achievement-badge unlocked' : 'achievement-badge'}
-                        title={a.description}
-                      >
-                        <span className="achievement-icon" aria-hidden="true">
-                          {a.icon}
-                        </span>
-                        <span className="achievement-title">{a.title}</span>
+                  <>
+                    <div className="achievements-grid">
+                      {achievements.map((a) => (
+                        <button
+                          type="button"
+                          key={a.id}
+                          className={
+                            a.id === selectedAchievementId
+                              ? `achievement-badge selected${a.unlocked ? ' unlocked' : ''}`
+                              : `achievement-badge${a.unlocked ? ' unlocked' : ''}`
+                          }
+                          onClick={() => setSelectedAchievementId(a.id === selectedAchievementId ? null : a.id)}
+                          aria-pressed={a.id === selectedAchievementId}
+                        >
+                          <span className="achievement-icon" aria-hidden="true">
+                            {a.icon}
+                          </span>
+                          <span className="achievement-title">{a.title}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {selectedAchievement && (
+                      <div className="achievement-detail">
+                        <div className="achievement-detail-header">
+                          <span className="achievement-icon" aria-hidden="true">
+                            {selectedAchievement.icon}
+                          </span>
+                          <strong>{selectedAchievement.title}</strong>
+                        </div>
+                        <p className="achievement-detail-desc">How to earn it: {selectedAchievement.description}</p>
+                        <p className={selectedAchievement.unlocked ? 'achievement-detail-status earned' : 'achievement-detail-status'}>
+                          {selectedAchievement.unlocked
+                            ? `✓ Earned on ${formatEarnedDate(selectedAchievement.earnedAt)}`
+                            : 'Not yet earned'}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
