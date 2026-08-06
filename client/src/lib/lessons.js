@@ -197,7 +197,7 @@ export const LEARN_TOPICS = [
           },
           {
             heading: 'The trade-off',
-            body: "Speed and certainty of execution come at a small cost: you don't get to name your price. In fast-moving real markets, the price you see and the price you actually pay can differ slightly by the time your order reaches the exchange. Real brokerages also offer \"limit orders\", which let you set a maximum buy price or minimum sell price — Investment Trainer only supports market orders to keep things simple.",
+            body: "Speed and certainty of execution come at a small cost: you don't get to name your price. In fast-moving real markets, the price you see and the price you actually pay can differ slightly by the time your order reaches the exchange. That's the gap limit and stop orders exist to close — covered in the next topic.",
           },
           {
             heading: 'Before you click Buy',
@@ -212,10 +212,15 @@ export const LEARN_TOPICS = [
             explanation: 'A market order prioritizes speed of execution over price control — it fills right away at the going price.',
           },
           {
-            question: 'What order type does Investment Trainer support?',
-            options: ['Limit orders only', 'Stop orders only', 'Market orders only', 'Options contracts'],
-            correctIndex: 2,
-            explanation: 'To keep things simple, every trade in this simulator is a market order.',
+            question: 'Why might the price you actually pay differ slightly from the price you saw right before placing a market order?',
+            options: [
+              'It never differs',
+              'Prices can move in the moment between when you see a quote and when the order reaches the exchange',
+              'The app rounds all prices to the nearest dollar',
+              'Market orders always fill at yesterday\'s closing price',
+            ],
+            correctIndex: 1,
+            explanation: 'A market order fills at whatever the current price is at execution — which can have moved slightly since you last looked.',
           },
         ],
       },
@@ -249,6 +254,142 @@ export const LEARN_TOPICS = [
             options: ['The moment the price changes', 'Only at the end of the year', 'When you actually sell the shares', 'As soon as you buy'],
             correctIndex: 2,
             explanation: "Unrealized P&L is just on paper; it becomes realized only once you sell.",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'order-types',
+    title: 'Order Types',
+    icon: '🎛️',
+    lessons: [
+      {
+        id: 'limit-orders',
+        title: 'Limit orders',
+        summary: 'Naming your price, at the cost of a guaranteed fill.',
+        sections: [
+          {
+            heading: 'What a limit order does',
+            body: 'A limit order lets you name a price instead of accepting whatever the market offers right now. A buy limit only fills at your limit price or lower; a sell limit only fills at your limit price or higher. In exchange for that control, you give up the market order\'s guarantee of an immediate fill — a limit order can sit unfilled for minutes, days, or indefinitely if the price never reaches your number.',
+          },
+          {
+            heading: 'Why use one',
+            body: 'Limit orders are useful when you have a specific price in mind — "I\'ll buy this dip if it drops to $40" or "I\'ll sell once it recovers to $55" — and would rather wait than pay whatever the market happens to be asking right now. They\'re also the standard way to trade a stock that isn\'t moving much, where the difference between the current price and your target price is small but still worth capturing.',
+          },
+          {
+            heading: 'In this simulator',
+            body: 'A placed limit order shows up as "Pending" in your Open Orders list. A background check runs periodically against live prices — once your buy limit price or higher is reached (for a sell) or your limit price or lower is reached (for a buy), it fills automatically at that price, exactly like a market order would, and moves your cash and holdings accordingly.',
+          },
+        ],
+        quiz: [
+          {
+            question: 'You place a BUY limit order at $45 on a stock currently trading at $50. When can it fill?',
+            options: [
+              'Immediately, at $50',
+              'Only if the price drops to $45 or lower',
+              'Only if the price rises to $45 or higher',
+              'It can never fill',
+            ],
+            correctIndex: 1,
+            explanation: 'A buy limit only fills at your limit price or better (lower) — it waits for the price to come down to you.',
+          },
+          {
+            question: 'What do you give up by using a limit order instead of a market order?',
+            options: [
+              'The ability to name your price',
+              'The guarantee that it fills right away',
+              'The ability to sell at all',
+              'Nothing — limit orders are strictly better',
+            ],
+            correctIndex: 1,
+            explanation: 'Limit orders trade the market order\'s "always fills now" guarantee for control over price.',
+          },
+        ],
+      },
+      {
+        id: 'stop-orders',
+        title: 'Stop orders',
+        summary: 'A trigger price that turns into a market order once crossed.',
+        sections: [
+          {
+            heading: 'What a stop order does',
+            body: 'A stop order sits inactive until the price crosses a trigger you set — the "stop price" — at which point it becomes a market order and fills at whatever the price is right then. A sell stop set below the current price is the classic "stop-loss": if the price falls to your stop, the position sells automatically, capping further loss. A buy stop set above the current price is often used to catch a breakout: "if it breaks past $60, I want in."',
+          },
+          {
+            heading: 'Stop orders are not price guarantees',
+            body: 'This is the detail beginners most often miss: once triggered, a stop order fills at the market price, not at the stop price. In a fast-moving or gapping market, the price by the time it actually fills can be noticeably worse than your stop price — a real risk to understand, not just a technicality.',
+          },
+          {
+            heading: 'In this simulator',
+            body: 'A pending stop order is checked against live prices by the same background job as limit orders. The moment the trigger condition is met, it fills immediately at the price observed at that check — mirroring how a real stop order becomes a market order the instant it\'s triggered.',
+          },
+        ],
+        quiz: [
+          {
+            question: 'You hold a stock at $80 and place a SELL stop at $70 to limit your downside. What happens once the price hits $70?',
+            options: [
+              'Nothing, it just watches',
+              'It becomes a market order and sells at the current price',
+              'It guarantees you sell at exactly $70',
+              'It cancels automatically',
+            ],
+            correctIndex: 1,
+            explanation: 'A triggered stop order fills at market — the price at that moment, which may not be exactly your stop price.',
+          },
+          {
+            question: 'Why can a stop order fill at a worse price than the stop price you set?',
+            options: [
+              'It never can — the fill price always matches the stop price exactly',
+              'Because once triggered it becomes a market order, and price can keep moving before it fills',
+              'Because the simulator charges a fee',
+              'Because stop orders only work on Fridays',
+            ],
+            correctIndex: 1,
+            explanation: 'Triggering turns it into a market order — subject to whatever the price has moved to by the time it actually executes.',
+          },
+        ],
+      },
+      {
+        id: 'stop-limit-orders',
+        title: 'Stop-limit orders',
+        summary: 'Combining a trigger price with a floor or ceiling on the fill.',
+        sections: [
+          {
+            heading: 'Two prices, two jobs',
+            body: 'A stop-limit order takes the trigger idea from a stop order and pairs it with the price control of a limit order. It has two prices: a stop price that arms the order, and a limit price that caps what you\'ll actually accept once armed. Nothing happens until the stop price is crossed — at that point, instead of becoming a market order, it becomes a limit order at your limit price.',
+          },
+          {
+            heading: 'The trade-off versus a plain stop',
+            body: 'This solves the plain stop order\'s "fills at any price" problem — a stop-limit sell will never execute below your limit price, no matter how far the market moves. The cost is the same one plain limit orders have: once armed, it might not fill at all if the price blows straight through your limit without pausing there. You\'re trading "guaranteed to get out" for "never get a price worse than I said."',
+          },
+          {
+            heading: 'In this simulator',
+            body: 'A stop-limit order shows as "Pending" until its stop price is crossed, at which point the background job marks it armed and starts checking it like a limit order — filling only once the price also satisfies the limit price.',
+          },
+        ],
+        quiz: [
+          {
+            question: 'What does the stop price do in a stop-limit order?',
+            options: [
+              'It\'s the price the order fills at',
+              'It arms the order, turning it into a limit order once crossed',
+              'It cancels the order once reached',
+              'It has no effect',
+            ],
+            correctIndex: 1,
+            explanation: 'Crossing the stop price only arms the order — the limit price then controls whether and where it actually fills.',
+          },
+          {
+            question: 'What is the main risk of a stop-limit order compared to a plain stop order?',
+            options: [
+              'It might fill at a much worse price than expected',
+              'It might never fill at all, even after the stop triggers, if price moves past the limit',
+              'It costs more to place',
+              'It can only be used for selling',
+            ],
+            correctIndex: 1,
+            explanation: 'Once armed, a stop-limit behaves like a limit order — it can sit unfilled if the price never comes back to your limit.',
           },
         ],
       },
