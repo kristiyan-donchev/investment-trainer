@@ -346,6 +346,59 @@ export async function getLeaderboard(range) {
   return { range, leaderboard: leaderboard.slice(0, 100) };
 }
 
+// Leaderboard cuts other than ROI. Unlike getLeaderboard() above, these never
+// need Yahoo price history — trade count, best single win, and current
+// diversification are all directly queryable from transactions/holdings.
+
+export async function getMostActiveLeaderboard(range) {
+  const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
+  const windowStart = config.days != null ? Date.now() - config.days * 24 * 60 * 60 * 1000 : null;
+
+  const result = await pool.query(
+    `SELECT u.id AS "userId", u.username,
+            COALESCE(COUNT(t.id), 0)::int AS "tradeCount"
+     FROM users u
+     LEFT JOIN transactions t ON t.user_id = u.id AND ($1::bigint IS NULL OR t.timestamp >= $1)
+     GROUP BY u.id, u.username
+     ORDER BY "tradeCount" DESC, u.id ASC`,
+    [windowStart]
+  );
+  const leaderboard = result.rows.map((row, i) => ({ ...row, rank: i + 1 }));
+  return { range, category: 'active', leaderboard: leaderboard.slice(0, 100) };
+}
+
+export async function getBiggestWinLeaderboard(range) {
+  const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
+  const windowStart = config.days != null ? Date.now() - config.days * 24 * 60 * 60 * 1000 : null;
+
+  const result = await pool.query(
+    `SELECT u.id AS "userId", u.username,
+            COALESCE(MAX(t.realized_pnl), 0) AS "bestWin",
+            (ARRAY_AGG(t.symbol ORDER BY t.realized_pnl DESC))[1] AS "bestWinSymbol"
+     FROM users u
+     LEFT JOIN transactions t ON t.user_id = u.id AND t.type = 'SELL' AND t.realized_pnl IS NOT NULL
+       AND ($1::bigint IS NULL OR t.timestamp >= $1)
+     GROUP BY u.id, u.username
+     ORDER BY "bestWin" DESC, u.id ASC`,
+    [windowStart]
+  );
+  const leaderboard = result.rows.map((row, i) => ({ ...row, rank: i + 1 }));
+  return { range, category: 'biggest_win', leaderboard: leaderboard.slice(0, 100) };
+}
+
+export async function getDiversificationLeaderboard() {
+  const result = await pool.query(
+    `SELECT u.id AS "userId", u.username,
+            COALESCE(COUNT(DISTINCT h.symbol), 0)::int AS "holdingCount"
+     FROM users u
+     LEFT JOIN holdings h ON h.user_id = u.id
+     GROUP BY u.id, u.username
+     ORDER BY "holdingCount" DESC, u.id ASC`
+  );
+  const leaderboard = result.rows.map((row, i) => ({ ...row, rank: i + 1 }));
+  return { category: 'diversified', leaderboard: leaderboard.slice(0, 100) };
+}
+
 export async function resetPortfolio(userId) {
   const client = await pool.connect();
   try {

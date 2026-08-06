@@ -1,10 +1,21 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { getPortfolio, buyShares, sellShares, resetPortfolio, getPerformance, getLeaderboard } from '../lib/portfolio.js';
+import {
+  getPortfolio,
+  buyShares,
+  sellShares,
+  resetPortfolio,
+  getPerformance,
+  getLeaderboard,
+  getMostActiveLeaderboard,
+  getBiggestWinLeaderboard,
+  getDiversificationLeaderboard,
+} from '../lib/portfolio.js';
 
 const router = Router();
 
 const PERFORMANCE_RANGES = ['1d', '1w', '1mo', '3mo', '6mo', '1y', 'all'];
+const LEADERBOARD_CATEGORIES = ['return', 'active', 'biggest_win', 'diversified'];
 
 router.use(requireAuth);
 
@@ -29,8 +40,12 @@ router.get('/performance', async (req, res) => {
 
 router.get('/leaderboard', async (req, res) => {
   const range = PERFORMANCE_RANGES.includes(req.query.range) ? req.query.range : '1mo';
+  const category = LEADERBOARD_CATEGORIES.includes(req.query.category) ? req.query.category : 'return';
   try {
-    res.json(await getLeaderboard(range));
+    if (category === 'active') return res.json(await getMostActiveLeaderboard(range));
+    if (category === 'biggest_win') return res.json(await getBiggestWinLeaderboard(range));
+    if (category === 'diversified') return res.json(await getDiversificationLeaderboard());
+    res.json({ ...(await getLeaderboard(range)), category: 'return' });
   } catch (err) {
     console.error('leaderboard error', err.message);
     res.status(502).json({ error: 'Could not load the leaderboard right now.' });
