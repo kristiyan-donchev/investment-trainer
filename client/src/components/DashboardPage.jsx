@@ -35,7 +35,7 @@ export default function DashboardPage({
       </section>
 
       <section className="panel">
-        <h2>Look up a stock</h2>
+        <h2>Look up a stock or crypto</h2>
         <SearchBar onSelect={onSelect} />
 
         {quoteError && <div className="form-error">{quoteError}</div>}
@@ -45,6 +45,7 @@ export default function DashboardPage({
             <div className="quote-heading">
               <h3>
                 {selectedQuote.symbol} — {selectedQuote.name}
+                {selectedQuote.type === 'CRYPTOCURRENCY' && <span className="search-badge crypto">Crypto</span>}
               </h3>
               <div className="quote-price">
                 ${selectedQuote.price.toFixed(2)}{' '}
@@ -54,7 +55,9 @@ export default function DashboardPage({
                 </span>
               </div>
               <div className="quote-meta">
-                {selectedQuote.exchange} · Market: {selectedQuote.marketState}
+                {selectedQuote.type === 'CRYPTOCURRENCY'
+                  ? 'Trades 24/7 · always open'
+                  : `${selectedQuote.exchange} · Market: ${selectedQuote.marketState}`}
               </div>
             </div>
 
@@ -72,7 +75,7 @@ export default function DashboardPage({
         )}
 
         {!selectedQuote && !quoteError && (
-          <p className="empty-state">Search above and select a company to see its price and chart.</p>
+          <p className="empty-state">Search above and select a company or cryptocurrency to see its price and chart.</p>
         )}
       </section>
 

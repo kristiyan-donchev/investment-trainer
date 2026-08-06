@@ -13,7 +13,7 @@ export default function Onboarding({ onClose }) {
 
         <p>
           This is a <strong>paper-trading simulator</strong>: you practice buying and selling{' '}
-          <strong>real stocks at real (delayed) market prices</strong>, using{' '}
+          <strong>real stocks and cryptocurrencies at real (delayed) market prices</strong>, using{' '}
           <strong>pretend money</strong>. No real trades are ever placed, and no brokerage account
           is connected. It's a safe place to learn how investing works.
         </p>
@@ -21,7 +21,7 @@ export default function Onboarding({ onClose }) {
         <h3>How to use it</h3>
         <ol>
           <li>You start with $10,000 in virtual cash.</li>
-          <li>Search for a company or ticker symbol (like AAPL or TSLA).</li>
+          <li>Search for a company, ticker, or cryptocurrency (like AAPL, TSLA, or Bitcoin).</li>
           <li>Look at its current price and recent price chart.</li>
           <li>Place a simulated "buy" or "sell" market order.</li>
           <li>Track your holdings, profit/loss, and full transaction history any time.</li>

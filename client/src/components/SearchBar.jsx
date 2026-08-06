@@ -41,7 +41,7 @@ export default function SearchBar({ onSelect }) {
     <div className="search-bar">
       <input
         type="text"
-        placeholder="Search a company or ticker, e.g. Apple or AAPL"
+        placeholder="Search a company, ticker, or crypto, e.g. Apple, AAPL, or Bitcoin"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={() => results.length && setOpen(true)}
@@ -54,7 +54,11 @@ export default function SearchBar({ onSelect }) {
             <li key={r.symbol} onMouseDown={() => handleSelect(r)}>
               <span className="search-symbol">{r.symbol}</span>
               <span className="search-name">{r.name}</span>
-              <span className="search-exchange">{r.exchange}</span>
+              {r.type === 'CRYPTOCURRENCY' ? (
+                <span className="search-badge crypto">Crypto</span>
+              ) : (
+                <span className="search-exchange">{r.exchange}</span>
+              )}
             </li>
           ))}
         </ul>

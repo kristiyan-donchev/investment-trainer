@@ -21,7 +21,7 @@ router.get('/search', async (req, res) => {
   try {
     const result = await yahooFinance.search(query, { quotesCount: 8, newsCount: 0 });
     const results = (result.quotes || [])
-      .filter((q) => q.symbol && (q.quoteType === 'EQUITY' || q.quoteType === 'ETF'))
+      .filter((q) => q.symbol && (q.quoteType === 'EQUITY' || q.quoteType === 'ETF' || q.quoteType === 'CRYPTOCURRENCY'))
       .map((q) => ({
         symbol: q.symbol,
         name: q.shortname || q.longname || q.symbol,
@@ -76,6 +76,7 @@ router.get('/quote/:symbol', async (req, res) => {
     res.json({
       symbol: meta.symbol,
       name: meta.shortName || meta.longName || meta.symbol,
+      type: meta.instrumentType || null,
       price,
       previousClose,
       change,
