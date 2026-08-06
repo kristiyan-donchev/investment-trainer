@@ -5,6 +5,7 @@ import DashboardPage from './DashboardPage.jsx';
 import LeaderboardPage from './LeaderboardPage.jsx';
 import WatchlistPage from './WatchlistPage.jsx';
 import LearnPage from './LearnPage.jsx';
+import AdSlot from './AdSlot.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
 
@@ -113,36 +114,44 @@ export default function TradingApp() {
       <Sidebar page={page} onNavigate={setPage} onShowHelp={() => setShowHelp(true)} onReset={handleReset} />
 
       <main className="main-content">
-        <div className="page-header">
-          <h1>{meta.title}</h1>
-          <p className="tagline">{meta.subtitle}</p>
-        </div>
+        <div className="main-layout">
+          <div className="page-column">
+            <div className="page-header">
+              <h1>{meta.title}</h1>
+              <p className="tagline">{meta.subtitle}</p>
+            </div>
 
-        <div className="page-content">
-          {page === 'dashboard' && (
-            <DashboardPage
-              state={state}
-              holdingsValue={holdingsValue}
-              quotes={quotes}
-              quoteError={quoteError}
-              selectedSymbol={selectedSymbol}
-              selectedQuote={selectedQuote}
-              selectedHolding={selectedHolding}
-              onSelect={handleSelect}
-              buy={buy}
-              sell={sell}
-              error={error}
-            />
-          )}
-          {page === 'leaderboard' && <LeaderboardPage />}
-          {page === 'watchlist' && <WatchlistPage onSelectSymbol={handleSelectFromWatchlist} />}
-          {page === 'learn' && <LearnPage />}
-        </div>
+            <div className="page-content">
+              {page === 'dashboard' && (
+                <DashboardPage
+                  state={state}
+                  holdingsValue={holdingsValue}
+                  quotes={quotes}
+                  quoteError={quoteError}
+                  selectedSymbol={selectedSymbol}
+                  selectedQuote={selectedQuote}
+                  selectedHolding={selectedHolding}
+                  onSelect={handleSelect}
+                  buy={buy}
+                  sell={sell}
+                  error={error}
+                />
+              )}
+              {page === 'leaderboard' && <LeaderboardPage />}
+              {page === 'watchlist' && <WatchlistPage onSelectSymbol={handleSelectFromWatchlist} />}
+              {page === 'learn' && <LearnPage />}
+            </div>
 
-        <footer className="app-footer">
-          Investment Trainer is an educational paper-trading simulator. It is not a brokerage, does not
-          execute real trades, and is not financial advice.
-        </footer>
+            <footer className="app-footer">
+              Investment Trainer is an educational paper-trading simulator. It is not a brokerage, does not
+              execute real trades, and is not financial advice.
+            </footer>
+          </div>
+
+          <aside className="ad-rail" aria-label="Advertisement">
+            <AdSlot />
+          </aside>
+        </div>
       </main>
     </div>
   );

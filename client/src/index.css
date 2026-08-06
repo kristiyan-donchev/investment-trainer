@@ -194,6 +194,18 @@ input {
   padding: 24px 32px 60px;
 }
 
+.main-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 32px;
+}
+
+.page-column {
+  flex: 1;
+  min-width: 0;
+  max-width: 900px;
+}
+
 .page-header {
   margin-bottom: 20px;
   padding-bottom: 16px;
@@ -208,6 +220,37 @@ input {
 
 .page-content {
   max-width: 900px;
+}
+
+/* Fills the empty space beside the page column on wide viewports. Hidden
+   below 1200px, where there's no meaningful room left for it. */
+.ad-rail {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+}
+
+.ad-slot {
+  width: 300px;
+}
+
+.ad-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 600px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  font-size: 13px;
+  background: var(--panel-bg);
+}
+
+@media (max-width: 1200px) {
+  .ad-rail {
+    display: none;
+  }
 }
 
 @media (max-width: 760px) {
