@@ -16,7 +16,9 @@ const ORDER_TYPE_TOOLTIPS = {
 };
 
 export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlaceOrder, error }) {
+  const [inputMode, setInputMode] = useState('shares');
   const [shares, setShares] = useState('');
+  const [amount, setAmount] = useState('');
   const [side, setSide] = useState('BUY');
   const [orderType, setOrderType] = useState('MARKET');
   const [limitPrice, setLimitPrice] = useState('');
@@ -25,7 +27,7 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlac
 
   if (!quote) return null;
 
-  const sharesNum = Number(shares);
+  const amountNum = Number(amount);
   const limitPriceNum = Number(limitPrice);
   const stopPriceNum = Number(stopPrice);
 
@@ -33,6 +35,13 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlac
   const needsStop = orderType === 'STOP' || orderType === 'STOP_LIMIT';
 
   const referencePrice = orderType === 'STOP' ? stopPriceNum : needsLimit ? limitPriceNum : quote.price;
+
+  // Dollar amounts are converted to shares up front, rounded down so the
+  // resulting cost never exceeds what the user typed (or their cash on a buy).
+  const sharesFromAmount =
+    referencePrice > 0 && amountNum > 0 ? Math.floor((amountNum / referencePrice) * 1e6) / 1e6 : 0;
+  const sharesNum = inputMode === 'amount' ? sharesFromAmount : Number(shares);
+
   const estimatedTotal = sharesNum > 0 && referencePrice > 0 ? sharesNum * referencePrice : 0;
 
   const canSubmit =
@@ -49,7 +58,10 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlac
     if (orderType === 'MARKET') {
       const order = { symbol: quote.symbol, name: quote.name, shares: sharesNum, price: quote.price };
       const ok = side === 'BUY' ? await onBuy(order) : await onSell(order);
-      if (ok) setShares('');
+      if (ok) {
+        setShares('');
+        setAmount('');
+      }
       return;
     }
 
@@ -64,6 +76,7 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlac
     });
     if (ok) {
       setShares('');
+      setAmount('');
       setLimitPrice('');
       setStopPrice('');
       setPlaced(true);
@@ -104,17 +117,53 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlac
         </select>
       </label>
 
-      <label className="field">
-        <span>Shares</span>
-        <input
-          type="number"
-          min="0"
-          step="any"
-          value={shares}
-          onChange={(e) => setShares(e.target.value)}
-          placeholder="0"
-        />
-      </label>
+      <div className="range-tabs">
+        <button
+          type="button"
+          className={inputMode === 'shares' ? 'range-tab active' : 'range-tab'}
+          onClick={() => setInputMode('shares')}
+        >
+          Shares
+        </button>
+        <button
+          type="button"
+          className={inputMode === 'amount' ? 'range-tab active' : 'range-tab'}
+          onClick={() => setInputMode('amount')}
+        >
+          Dollar amount
+        </button>
+      </div>
+
+      {inputMode === 'shares' ? (
+        <label className="field">
+          <span>Shares</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={shares}
+            onChange={(e) => setShares(e.target.value)}
+            placeholder="0"
+          />
+        </label>
+      ) : (
+        <label className="field">
+          <span>Amount ($)</span>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+          />
+          {amountNum > 0 && (
+            <span className="field-hint">
+              ≈ {sharesFromAmount > 0 ? sharesFromAmount : 0} share(s) at ${referencePrice.toFixed(2)}
+            </span>
+          )}
+        </label>
+      )}
 
       {needsStop && (
         <label className="field">
@@ -169,7 +218,7 @@ export default function TradePanel({ quote, holding, cash, onBuy, onSell, onPlac
 
       <button type="submit" className="primary-button" disabled={!canSubmit}>
         {orderType === 'MARKET'
-          ? `${side === 'BUY' ? 'Buy' : 'Sell'} ${shares || 0} share(s) of ${quote.symbol}`
+          ? `${side === 'BUY' ? 'Buy' : 'Sell'} ${sharesNum > 0 ? sharesNum : 0} share(s) of ${quote.symbol}`
           : `Place ${side === 'BUY' ? 'buy' : 'sell'} ${ORDER_TYPE_LABELS[orderType]}`}
       </button>
       <p className="disclaimer-inline">Simulated only — no real money or brokerage is involved.</p>

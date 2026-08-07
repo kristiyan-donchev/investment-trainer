@@ -923,6 +923,13 @@ input {
   box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
 .trade-meta {
   font-size: 14px;
   margin: 10px 0;
