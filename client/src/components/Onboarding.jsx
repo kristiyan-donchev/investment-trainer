@@ -5,7 +5,7 @@ export default function Onboarding({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Welcome to Investment Trainer</h2>
+          <h2>Welcome to TradeScrim</h2>
           <button className="icon-button" onClick={onClose} aria-label="Close">
             ✕
           </button>

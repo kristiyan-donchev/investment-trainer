@@ -61,7 +61,7 @@ function scheduleMarketChecks() {
 initSchema()
   .then(() => {
     app.listen(PORT, () => {
-      console.log(`Investment Trainer server listening on http://localhost:${PORT}`);
+      console.log(`TradeScrim server listening on http://localhost:${PORT}`);
     });
     scheduleMarketChecks();
   })

@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
-export const COOKIE_NAME = 'investment_trainer_token';
+export const COOKIE_NAME = 'tradescrim_token';
 const TOKEN_TTL = '7d';
 
 let secret = process.env.JWT_SECRET;

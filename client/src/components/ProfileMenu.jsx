@@ -298,7 +298,7 @@ export default function ProfileMenu({ onReset }) {
 
               <div className="settings-section">
                 <div className="settings-section-title">Appearance</div>
-                <div className="settings-section-desc">Choose how Investment Trainer looks on this device.</div>
+                <div className="settings-section-desc">Choose how TradeScrim looks on this device.</div>
                 <div className="theme-switch" role="radiogroup" aria-label="Theme">
                   {THEME_OPTIONS.map((opt) => (
                     <button

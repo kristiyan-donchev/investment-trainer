@@ -9,7 +9,7 @@ import AdSlot from './AdSlot.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
 
-const SEEN_ONBOARDING_KEY = 'investment-trainer-seen-onboarding';
+const SEEN_ONBOARDING_KEY = 'tradescrim-seen-onboarding';
 const QUOTE_REFRESH_MS = 20000;
 
 const PAGE_META = {
@@ -143,7 +143,7 @@ export default function TradingApp() {
             </div>
 
             <footer className="app-footer">
-              Investment Trainer is an educational paper-trading simulator. It is not a brokerage, does not
+              TradeScrim is an educational paper-trading simulator. It is not a brokerage, does not
               execute real trades, and is not financial advice.
             </footer>
           </div>

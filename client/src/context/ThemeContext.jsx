@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
-const STORAGE_KEY = 'investment-trainer-theme';
+const STORAGE_KEY = 'tradescrim-theme';
 const MODES = ['light', 'dark', 'system'];
 
 function getSystemTheme() {

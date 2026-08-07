@@ -1,7 +1,7 @@
 {
-  "name": "investment-trainer-server",
+  "name": "tradescrim-server",
   "version": "1.0.0",
-  "description": "API server for the Investment Trainer paper-trading app: market-data proxy, auth, and per-user portfolio persistence",
+  "description": "API server for the TradeScrim paper-trading app: market-data proxy, auth, and per-user portfolio persistence",
   "type": "module",
   "private": true,
   "main": "src/index.js",

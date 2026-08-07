@@ -26,10 +26,10 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 const CLIENT_ORIGIN = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0];
 // CLIENT_ORIGIN must stay a bare origin (scheme+host) to match the browser's Origin
-// header for CORS. GitHub Pages project sites serve from a subpath though, so the
-// page Google should redirect back to after login needs its own, more specific URL.
+// header for CORS. CLIENT_APP_URL exists separately for cases where the page Google
+// should redirect back to after login differs from that bare origin.
 const CLIENT_APP_URL = process.env.CLIENT_APP_URL || CLIENT_ORIGIN;
-const OAUTH_STATE_COOKIE = 'investment_trainer_oauth_state';
+const OAUTH_STATE_COOKIE = 'tradescrim_oauth_state';
 
 // Cross-site cookies (frontend and backend on different domains in production)
 // require SameSite=None, which browsers only honor when Secure is also set.

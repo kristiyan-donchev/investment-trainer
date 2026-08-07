@@ -1,11 +1,10 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ command }) => ({
-  // GitHub Pages serves this as a project site at /investment-trainer/, not the
-  // domain root, so production asset URLs need that prefix. The dev server still
-  // runs at the root so `npm run dev` behaves normally.
-  base: command === 'build' ? '/investment-trainer/' : '/',
+export default defineConfig(() => ({
+  // Served from a custom domain's root (see client/public/CNAME once the
+  // domain is registered), so no subpath prefix is needed here.
+  base: '/',
   plugins: [react()],
   server: {
     port: 5173,

@@ -1,4 +1,4 @@
-# Investment Trainer
+# TradeScrim
 
 A beginner-friendly **paper-trading simulator** for learning how stock investing works — using real,
 delayed market prices and **100% virtual money**.
@@ -80,7 +80,7 @@ delayed market prices and **100% virtual money**.
 ## Project structure
 
 ```
-investment-trainer/
+tradescrim/
 ├── server/
 │   └── src/
 │       ├── routes/            # /api/search, /api/quote/:symbol, /api/history/:symbol,
@@ -157,31 +157,34 @@ copy the connection string. This is your `DATABASE_URL`.
 - Start command: `npm start`
 - Environment variables: `DATABASE_URL` (from step 1), `JWT_SECRET` (a long random string —
   generate one with e.g. `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`),
-  `NODE_ENV=production`, and `CLIENT_ORIGIN` set to your deployed frontend's URL (step 3) once you
-  know it. Optionally add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` (see
-  [Accounts & auth](#accounts--auth)) to enable "Continue with Google" — `GOOGLE_REDIRECT_URI` must
-  be this backend's own public URL plus `/api/auth/google/callback`, and must be added as an
-  "Authorized redirect URI" on the Google OAuth client in
-  [Google Cloud Console](https://console.cloud.google.com/apis/credentials). If the frontend is
-  hosted at a subpath (as GitHub Pages project sites are), also set `CLIENT_APP_URL` to the full
-  frontend URL — `CLIENT_ORIGIN` has to stay a bare origin for CORS, so it can't double as the
-  post-login redirect target.
-- Note the backend's public URL (e.g. `https://investment-trainer-api.onrender.com`) — you'll need
-  it in step 3.
+  `NODE_ENV=production`, and `CLIENT_ORIGIN` set to your custom domain (step 3), e.g.
+  `https://tradescrim.com`. Optionally add `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` /
+  `GOOGLE_REDIRECT_URI` (see [Accounts & auth](#accounts--auth)) to enable "Continue with Google" —
+  `GOOGLE_REDIRECT_URI` must be this backend's own public URL plus `/api/auth/google/callback`, and
+  must be added as an "Authorized redirect URI" on the Google OAuth client in
+  [Google Cloud Console](https://console.cloud.google.com/apis/credentials). `CLIENT_APP_URL` isn't
+  needed here — it exists only for the case where the post-login redirect target differs from the
+  bare `CLIENT_ORIGIN`, which doesn't apply once the frontend is served from its own domain's root.
+- Note the backend's public URL (e.g. `https://tradescrim-api.onrender.com`) — you'll need it in
+  step 3.
 
-**3. Frontend — [GitHub Pages](https://pages.github.com/).** A workflow at
+**3. Frontend — [GitHub Pages](https://pages.github.com/) with a custom domain.** A workflow at
 `.github/workflows/deploy-pages.yml` builds `client/` and deploys it automatically on every push to
 `master` that touches `client/**`. One-time setup:
 - In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**.
 - In **Settings → Secrets and variables → Actions → Variables**, add a repository variable
   `VITE_API_BASE_URL` set to the backend URL from step 2 (e.g.
-  `https://investment-trainer-api.onrender.com`) — the workflow bakes this into the build.
+  `https://tradescrim-api.onrender.com`) — the workflow bakes this into the build.
 - Push to `master` (or run the workflow manually from the **Actions** tab) to trigger the first
-  deploy. The site will be published at `https://<your-github-username>.github.io/investment-trainer/`.
-- Once you know that URL, go back to your backend's environment variables and set `CLIENT_ORIGIN` to
-  it, then redeploy the backend so CORS/cookies allow it.
-- `vite.config.js` sets `base: '/investment-trainer/'` for production builds to match GitHub Pages'
-  project-site subpath — if you rename the repo, update that path too.
+  deploy.
+- **Point your registered domain at it:** in **Settings → Pages → Custom domain**, enter your domain
+  (e.g. `tradescrim.com`) and follow GitHub's DNS instructions (an `A`/`ALIAS` record at your apex
+  domain, or a `CNAME` record for a `www` subdomain, pointing at GitHub Pages). GitHub will commit a
+  `CNAME` file to the Pages deployment for you the first time you save this setting. `vite.config.js`
+  already builds with `base: '/'`, since the app is served from the domain's root rather than a
+  `github.io/<repo>` subpath.
+- Once your domain is live, go back to your backend's environment variables and confirm
+  `CLIENT_ORIGIN` matches it exactly, then redeploy the backend so CORS/cookies allow it.
 
 (Vercel or Netlify work too, if you'd rather not use GitHub Pages — same build command `npm run
 build`, output directory `dist`, and `VITE_API_BASE_URL` env var.)
@@ -218,6 +221,6 @@ cd client && npm run build && npm run preview
 
 ## Disclaimer
 
-Investment Trainer is provided for **educational purposes only**. It is not a broker-dealer, does
+TradeScrim is provided for **educational purposes only**. It is not a broker-dealer, does
 not handle real money or securities, and nothing in this app constitutes financial, investment, or
 trading advice. Simulated results do not guarantee or predict real-world investing outcomes.

@@ -33,7 +33,7 @@ jobs:
       - name: Build
         working-directory: client
         # Set this repository variable (Settings > Secrets and variables > Actions > Variables)
-        # to your deployed backend's public URL, e.g. https://investment-trainer-api.onrender.com
+        # to your deployed backend's public URL, e.g. https://tradescrim-api.onrender.com
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: npm run build

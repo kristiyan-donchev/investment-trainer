@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-const STORAGE_KEY = 'investment-trainer-lesson-progress';
+const STORAGE_KEY = 'tradescrim-lesson-progress';
 
 function loadCompleted() {
   try {

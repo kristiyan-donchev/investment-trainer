@@ -47,7 +47,7 @@ export default function AuthPage() {
   return (
     <div className="app auth-page">
       <div className="panel auth-panel">
-        <h1>Investment Trainer</h1>
+        <h1>TradeScrim</h1>
         <p className="tagline">Practice trading with real market prices — using 100% virtual money.</p>
 
         <div className="trade-side-toggle">

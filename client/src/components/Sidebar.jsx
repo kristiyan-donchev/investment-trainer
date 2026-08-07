@@ -37,7 +37,7 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
         <span className="sidebar-logo-mark" aria-hidden="true">
           📈
         </span>
-        <span className="sidebar-logo-text">Investment Trainer</span>
+        <span className="sidebar-logo-text">TradeScrim</span>
       </button>
 
       <div className="sidebar-nav">
