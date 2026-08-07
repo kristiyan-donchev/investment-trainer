@@ -1,48 +1,24 @@
 import { useEffect } from 'react';
 
-// Populated once you have a real AdSense account — see client/.env.example.
-// Until then this renders a plain placeholder box so the layout can be built
-// and reviewed without loading anything from Google or shipping a broken ad
-// script tag.
-const CLIENT_ID = import.meta.env.VITE_ADSENSE_CLIENT_ID;
+// The AdSense script itself is loaded once, globally, in index.html — Auto
+// ads uses that alone to place ads across the site with no markup here. This
+// component only renders a manual ad unit for the dashboard right rail, once
+// VITE_ADSENSE_SLOT_RAIL is set to a real ad unit ID from the AdSense
+// dashboard (see client/.env.example). Until then it renders nothing.
+const CLIENT_ID = import.meta.env.VITE_ADSENSE_CLIENT_ID || 'ca-pub-1940314723028167';
 const DEFAULT_SLOT = import.meta.env.VITE_ADSENSE_SLOT_RAIL;
 
-let scriptLoadPromise = null;
-
-function loadAdSenseScript(clientId) {
-  if (!scriptLoadPromise) {
-    scriptLoadPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-  return scriptLoadPromise;
-}
-
 export default function AdSlot({ slot = DEFAULT_SLOT, format = 'auto', className = '' }) {
-  const configured = Boolean(CLIENT_ID && slot);
-
   useEffect(() => {
-    if (!configured) return;
-    loadAdSenseScript(CLIENT_ID)
-      .then(() => {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      })
-      .catch((err) => console.error('AdSense failed to load', err));
-  }, [configured]);
+    if (!slot) return;
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (err) {
+      console.error('AdSense failed to render ad unit', err);
+    }
+  }, [slot]);
 
-  if (!configured) {
-    return (
-      <div className={`ad-slot ad-placeholder ${className}`}>
-        <span>Ad space</span>
-      </div>
-    );
-  }
+  if (!slot) return null;
 
   return (
     <ins
