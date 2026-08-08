@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { yahooFinance } from '../lib/yahoo.js';
 import { getQuote } from '../lib/quotes.js';
+import { getMarketNews } from '../lib/news.js';
 
 const router = Router();
 
@@ -68,6 +69,16 @@ router.get('/history/:symbol', async (req, res) => {
   } catch (err) {
     console.error('history error', err.message);
     res.status(502).json({ error: `Could not fetch price history for "${symbol}".` });
+  }
+});
+
+// GET /api/news
+router.get('/news', async (req, res) => {
+  try {
+    res.json({ news: await getMarketNews() });
+  } catch (err) {
+    console.error('news error', err.message);
+    res.status(502).json({ error: 'Could not load market news right now.' });
   }
 });
 

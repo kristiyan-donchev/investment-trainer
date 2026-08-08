@@ -48,6 +48,10 @@ export function fetchQuote(symbol) {
   return getJson(`${BASE}/quote/${encodeURIComponent(symbol)}`);
 }
 
+export function fetchMarketNews() {
+  return getJson(`${BASE}/news`).then((d) => d.news || []);
+}
+
 export function fetchHistory(symbol, range = '1mo') {
   return getJson(`${BASE}/history/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range)}`).then(
     (d) => d.points || []

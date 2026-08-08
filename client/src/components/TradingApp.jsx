@@ -7,6 +7,7 @@ import WatchlistPage from './WatchlistPage.jsx';
 import LearnPage from './LearnPage.jsx';
 import FriendsPage from './FriendsPage.jsx';
 import ChallengesPage from './ChallengesPage.jsx';
+import NewsPage from './NewsPage.jsx';
 import AdSlot from './AdSlot.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
@@ -26,6 +27,10 @@ const PAGE_META = {
   watchlist: {
     title: 'Watchlist',
     subtitle: 'Track symbols you care about and get notified when they hit your price.',
+  },
+  news: {
+    title: 'News',
+    subtitle: 'Latest headlines from the markets.',
   },
   learn: {
     title: 'Learn',
@@ -152,6 +157,7 @@ export default function TradingApp() {
               {page === 'learn' && <LearnPage />}
               {page === 'friends' && <FriendsPage />}
               {page === 'challenges' && <ChallengesPage />}
+              {page === 'news' && <NewsPage />}
             </div>
 
             <footer className="app-footer">

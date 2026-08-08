@@ -4,6 +4,7 @@ import { fetchUnseenAlertCount, fetchUnseenFriendRequestCount } from '../lib/api
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
+  { key: 'news', label: 'News', icon: '📰' },
   { key: 'learn', label: 'Learn', icon: '🎓' },
   { key: 'watchlist', label: 'Watchlist', icon: '👁️' },
   { key: 'challenges', label: 'Challenges', icon: '🎯' },
