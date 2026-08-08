@@ -6,9 +6,9 @@ const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'learn', label: 'Learn', icon: '🎓' },
   { key: 'watchlist', label: 'Watchlist', icon: '👁️' },
-  { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
   { key: 'challenges', label: 'Challenges', icon: '🎯' },
   { key: 'friends', label: 'Friends', icon: '🧑‍🤝‍🧑' },
+  { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
 ];
 
 const UNSEEN_POLL_MS = 30000;
