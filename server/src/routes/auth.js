@@ -155,6 +155,14 @@ router.get('/google/callback', async (req, res) => {
   res.clearCookie(OAUTH_STATE_COOKIE, CLEAR_COOKIE_OPTIONS);
 
   if (!code || !state || state !== cookieState) {
+    console.error('google auth error: state check failed', {
+      hasCode: Boolean(code),
+      hasState: Boolean(state),
+      hasCookieState: Boolean(cookieState),
+      statesMatch: state === cookieState,
+      cookieHeaderPresent: Boolean(req.headers.cookie),
+      userAgent: req.headers['user-agent'],
+    });
     return res.redirect(`${CLIENT_APP_URL}?authError=google`);
   }
 
