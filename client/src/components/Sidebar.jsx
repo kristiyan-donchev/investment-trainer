@@ -79,6 +79,18 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
           <span className="sidebar-nav-label">Help &amp; terms</span>
         </button>
 
+        <a
+          className="sidebar-nav-item"
+          href="https://github.com/kristiyan-donchev/tradescrim/issues/new"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className="sidebar-nav-icon" aria-hidden="true">
+            🐛
+          </span>
+          <span className="sidebar-nav-label">Report a bug</span>
+        </a>
+
         <ProfileMenu onReset={onReset} />
       </div>
     </nav>

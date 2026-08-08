@@ -152,6 +152,8 @@ input {
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
+  box-sizing: border-box;
   transition: background-color 0.15s var(--ease), color 0.15s var(--ease);
 }
 
