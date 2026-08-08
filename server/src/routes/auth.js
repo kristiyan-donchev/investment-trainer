@@ -247,7 +247,9 @@ router.get('/google/callback', async (req, res) => {
     }
 
     const exchangeToken = issueLoginExchangeToken(user.id);
-    res.redirect(`${CLIENT_APP_URL}?loginToken=${exchangeToken}`);
+    const redirectTo = `${CLIENT_APP_URL}?loginToken=${exchangeToken}`;
+    console.log('google callback success, redirecting', { userId: user.id, redirectTo });
+    res.redirect(redirectTo);
   } catch (err) {
     console.error('google auth error', err.message);
     res.redirect(`${CLIENT_APP_URL}?authError=google`);
@@ -262,15 +264,22 @@ router.post('/google/exchange', async (req, res) => {
   const { token } = req.body || {};
   const userId = typeof token === 'string' ? consumeLoginExchangeToken(token) : null;
   if (!userId) {
+    console.error('google exchange error: invalid or expired token', {
+      hasToken: typeof token === 'string' && token.length > 0,
+      origin: req.headers.origin,
+      userAgent: req.headers['user-agent'],
+    });
     return res.status(400).json({ error: 'This sign-in link has expired. Please try again.' });
   }
   try {
     const user = await findUserById(userId);
     if (!user) {
+      console.error('google exchange error: token valid but user missing', { userId });
       return res.status(400).json({ error: 'This sign-in link has expired. Please try again.' });
     }
     const sessionToken = signToken(user.id);
     res.cookie(COOKIE_NAME, sessionToken, COOKIE_OPTIONS);
+    console.log('google exchange success', { userId: user.id, origin: req.headers.origin });
     res.json({ user: toPublicUser(user) });
   } catch (err) {
     console.error('google exchange error', err.message);
