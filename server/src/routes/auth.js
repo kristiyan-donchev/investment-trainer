@@ -30,6 +30,13 @@ const CLIENT_ORIGIN = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').spl
 // should redirect back to after login differs from that bare origin.
 const CLIENT_APP_URL = process.env.CLIENT_APP_URL || CLIENT_ORIGIN;
 const OAUTH_STATE_COOKIE = 'tradescrim_oauth_state';
+// Scopes the cookie to the shared parent domain (api.tradescrim.com and
+// tradescrim.com are then same-site siblings) instead of relying on
+// SameSite=None alone — iOS Safari (and every browser on iOS, since Apple
+// forces them all onto WebKit) blocks third-party SameSite=None cookies
+// outright, which broke Google sign-in on phones even though it worked in
+// desktop testing. Same-site sibling cookies aren't subject to that block.
+const COOKIE_DOMAIN = IS_PROD ? '.tradescrim.com' : undefined;
 
 // Cross-site cookies (frontend and backend on different domains in production)
 // require SameSite=None, which browsers only honor when Secure is also set.
@@ -37,6 +44,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: IS_PROD ? 'none' : 'lax',
   secure: IS_PROD,
+  domain: COOKIE_DOMAIN,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
@@ -44,6 +52,7 @@ const CLEAR_COOKIE_OPTIONS = {
   httpOnly: true,
   sameSite: IS_PROD ? 'none' : 'lax',
   secure: IS_PROD,
+  domain: COOKIE_DOMAIN,
 };
 
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,24}$/;
