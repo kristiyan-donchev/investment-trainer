@@ -615,6 +615,22 @@ input {
   letter-spacing: -0.02em;
 }
 
+.auth-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 0 12px;
+}
+
+.auth-back-link:hover {
+  color: var(--text);
+}
+
 .auth-panel .trade-side-toggle {
   margin: 20px 0 16px;
 }
@@ -846,6 +862,11 @@ input {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
+}
+
+.range-tab:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .chart-status {
@@ -1137,6 +1158,72 @@ input {
 .empty-state {
   color: var(--muted);
   font-size: 14px;
+}
+
+/* Guest gate — "log in to unlock this" placeholder */
+.guest-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  background: var(--panel-bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  margin-bottom: 20px;
+}
+
+.guest-gate-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.guest-gate-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.guest-gate-desc {
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 40ch;
+  margin: 0;
+}
+
+.guest-gate-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.guest-gate-compact {
+  flex-direction: row;
+  text-align: left;
+  padding: 14px 16px;
+  margin-bottom: 0;
+  gap: 12px;
+}
+
+.guest-gate-compact .guest-gate-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.guest-gate-compact .guest-gate-text {
+  flex: 1;
+}
+
+.guest-gate-compact .guest-gate-actions {
+  margin-top: 0;
+  flex-shrink: 0;
 }
 
 /* Loading screen */

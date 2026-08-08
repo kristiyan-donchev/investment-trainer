@@ -16,11 +16,12 @@ const NAV_ITEMS = [
 
 const UNSEEN_POLL_MS = 30000;
 
-export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
+export default function Sidebar({ page, onNavigate, onShowHelp, onReset, guest = false, onRequestLogin }) {
   const [unseenAlerts, setUnseenAlerts] = useState(0);
   const [unseenRequests, setUnseenRequests] = useState(0);
 
   useEffect(() => {
+    if (guest) return undefined;
     let cancelled = false;
     function poll() {
       fetchUnseenAlertCount()
@@ -40,7 +41,7 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [page]);
+  }, [page, guest]);
 
   return (
     <nav className="sidebar">
@@ -81,9 +82,18 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
           <span className="sidebar-nav-label">Help &amp; terms</span>
         </button>
 
-        <ReportBugButton page={page} />
+        <ReportBugButton page={page} guest={guest} onRequestLogin={onRequestLogin} />
 
-        <ProfileMenu onReset={onReset} />
+        {guest ? (
+          <button type="button" className="sidebar-nav-item" onClick={onRequestLogin}>
+            <span className="sidebar-nav-icon">
+              <Icon name="lock" size={18} />
+            </span>
+            <span className="sidebar-nav-label">Log in</span>
+          </button>
+        ) : (
+          <ProfileMenu onReset={onReset} />
+        )}
       </div>
     </nav>
   );

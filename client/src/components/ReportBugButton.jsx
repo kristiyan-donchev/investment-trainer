@@ -7,7 +7,7 @@ function formatDate(ts) {
   return new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-export default function ReportBugButton({ page }) {
+export default function ReportBugButton({ page, guest = false, onRequestLogin }) {
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [reports, setReports] = useState([]);
@@ -49,7 +49,7 @@ export default function ReportBugButton({ page }) {
 
   return (
     <>
-      <button type="button" className="sidebar-nav-item" onClick={() => setOpen(true)}>
+      <button type="button" className="sidebar-nav-item" onClick={guest ? onRequestLogin : () => setOpen(true)}>
         <span className="sidebar-nav-icon">
           <Icon name="bug" size={18} />
         </span>

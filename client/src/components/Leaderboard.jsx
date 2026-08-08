@@ -76,6 +76,8 @@ export default function Leaderboard() {
         <button
           className={scope === 'friends' ? 'range-tab active' : 'range-tab'}
           onClick={() => setScope('friends')}
+          disabled={!user}
+          title={user ? undefined : 'Log in to see your friends leaderboard.'}
         >
           Friends
         </button>

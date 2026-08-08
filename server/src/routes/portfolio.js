@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import {
   getPortfolio,
   buyShares,
@@ -17,6 +17,27 @@ const router = Router();
 
 const PERFORMANCE_RANGES = ['1d', '1w', '1mo', '3mo', '6mo', '1y', 'all'];
 const LEADERBOARD_CATEGORIES = ['return', 'active', 'biggest_win', 'diversified'];
+
+// Public — the leaderboard is meant to be browsable without an account.
+// Registered before router.use(requireAuth) below so guests reach it.
+router.get('/leaderboard', optionalAuth, async (req, res) => {
+  const range = PERFORMANCE_RANGES.includes(req.query.range) ? req.query.range : '1mo';
+  const category = LEADERBOARD_CATEGORIES.includes(req.query.category) ? req.query.category : 'return';
+  try {
+    let userIds = null;
+    if (req.query.scope === 'friends') {
+      if (!req.userId) return res.status(401).json({ error: 'Log in to see your friends leaderboard.' });
+      userIds = [...(await getFriendIds(req.userId)), req.userId];
+    }
+    if (category === 'active') return res.json(await getMostActiveLeaderboard(range, { userIds }));
+    if (category === 'biggest_win') return res.json(await getBiggestWinLeaderboard(range, { userIds }));
+    if (category === 'diversified') return res.json(await getDiversificationLeaderboard({ userIds }));
+    res.json({ ...(await getLeaderboard(range, { userIds })), category: 'return' });
+  } catch (err) {
+    console.error('leaderboard error', err.message);
+    res.status(502).json({ error: 'Could not load the leaderboard right now.' });
+  }
+});
 
 router.use(requireAuth);
 
@@ -36,24 +57,6 @@ router.get('/performance', async (req, res) => {
   } catch (err) {
     console.error('performance error', err.message);
     res.status(502).json({ error: 'Could not load portfolio performance right now.' });
-  }
-});
-
-router.get('/leaderboard', async (req, res) => {
-  const range = PERFORMANCE_RANGES.includes(req.query.range) ? req.query.range : '1mo';
-  const category = LEADERBOARD_CATEGORIES.includes(req.query.category) ? req.query.category : 'return';
-  try {
-    let userIds = null;
-    if (req.query.scope === 'friends') {
-      userIds = [...(await getFriendIds(req.userId)), req.userId];
-    }
-    if (category === 'active') return res.json(await getMostActiveLeaderboard(range, { userIds }));
-    if (category === 'biggest_win') return res.json(await getBiggestWinLeaderboard(range, { userIds }));
-    if (category === 'diversified') return res.json(await getDiversificationLeaderboard({ userIds }));
-    res.json({ ...(await getLeaderboard(range, { userIds })), category: 'return' });
-  } catch (err) {
-    console.error('leaderboard error', err.message);
-    res.status(502).json({ error: 'Could not load the leaderboard right now.' });
   }
 });
 

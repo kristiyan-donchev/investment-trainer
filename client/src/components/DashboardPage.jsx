@@ -9,6 +9,7 @@ import CreateAlertForm from './CreateAlertForm.jsx';
 import PortfolioSummary from './PortfolioSummary.jsx';
 import HoldingsTable from './HoldingsTable.jsx';
 import TransactionHistory from './TransactionHistory.jsx';
+import GuestGate from './GuestGate.jsx';
 import { useOrders } from '../hooks/useOrders.js';
 import { useWatchlist } from '../hooks/useWatchlist.js';
 import { STARTING_CASH, totalRealizedPnL } from '../lib/portfolio.js';
@@ -25,6 +26,8 @@ export default function DashboardPage({
   buy,
   sell,
   error,
+  guest = false,
+  onRequestLogin,
 }) {
   const { orders, loading: ordersLoading, error: ordersError, place: placeOrder, cancel: cancelOrder } = useOrders();
   const { isWatching, add: watch, remove: unwatch } = useWatchlist();
@@ -33,22 +36,32 @@ export default function DashboardPage({
 
   return (
     <>
-      <PortfolioSummary
-        cash={state.cash}
-        holdingsValue={holdingsValue}
-        totalRealizedPnL={totalRealizedPnL(state.transactions)}
-        startingCash={STARTING_CASH}
-      />
+      {guest ? (
+        <GuestGate
+          title="Log in to start paper trading"
+          description="Every account starts with $10,000 in virtual cash — track your portfolio, performance, and P&L."
+          onRequestLogin={onRequestLogin}
+        />
+      ) : (
+        <>
+          <PortfolioSummary
+            cash={state.cash}
+            holdingsValue={holdingsValue}
+            totalRealizedPnL={totalRealizedPnL(state.transactions)}
+            startingCash={STARTING_CASH}
+          />
 
-      <section className="panel">
-        <h2>Portfolio performance</h2>
-        <PerformanceChart />
-      </section>
+          <section className="panel">
+            <h2>Portfolio performance</h2>
+            <PerformanceChart />
+          </section>
 
-      <section className="panel">
-        <h2>Portfolio breakdown</h2>
-        <PortfolioBreakdown cash={state.cash} holdings={state.holdings} quotes={quotes} />
-      </section>
+          <section className="panel">
+            <h2>Portfolio breakdown</h2>
+            <PortfolioBreakdown cash={state.cash} holdings={state.holdings} quotes={quotes} />
+          </section>
+        </>
+      )}
 
       <section className="panel">
         <h2>Look up a stock or crypto</h2>
@@ -75,31 +88,42 @@ export default function DashboardPage({
                   ? 'Trades 24/7 · always open'
                   : `${selectedQuote.exchange} · Market: ${selectedQuote.marketState}`}
               </div>
-              <div className="quote-actions">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() =>
-                    watching ? unwatch(selectedQuote.symbol) : watch(selectedQuote.symbol, selectedQuote.name)
-                  }
-                >
-                  <Icon name="star" size={14} filled={watching} /> {watching ? 'Watching' : 'Watch'}
-                </button>
-                <CreateAlertForm symbol={selectedQuote.symbol} name={selectedQuote.name} />
-              </div>
+              {!guest && (
+                <div className="quote-actions">
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() =>
+                      watching ? unwatch(selectedQuote.symbol) : watch(selectedQuote.symbol, selectedQuote.name)
+                    }
+                  >
+                    <Icon name="star" size={14} filled={watching} /> {watching ? 'Watching' : 'Watch'}
+                  </button>
+                  <CreateAlertForm symbol={selectedQuote.symbol} name={selectedQuote.name} />
+                </div>
+              )}
             </div>
 
             <PriceChart symbol={selectedSymbol} />
 
-            <TradePanel
-              quote={selectedQuote}
-              holding={selectedHolding}
-              cash={state.cash}
-              onBuy={buy}
-              onSell={sell}
-              onPlaceOrder={placeOrder}
-              error={error}
-            />
+            {guest ? (
+              <GuestGate
+                compact
+                title="Log in to trade"
+                description="Watch symbols, set price alerts, and buy or sell with virtual cash."
+                onRequestLogin={onRequestLogin}
+              />
+            ) : (
+              <TradePanel
+                quote={selectedQuote}
+                holding={selectedHolding}
+                cash={state.cash}
+                onBuy={buy}
+                onSell={sell}
+                onPlaceOrder={placeOrder}
+                error={error}
+              />
+            )}
           </div>
         )}
 
@@ -108,20 +132,24 @@ export default function DashboardPage({
         )}
       </section>
 
-      <section className="panel">
-        <h2>Your holdings</h2>
-        <HoldingsTable holdings={state.holdings} quotes={quotes} onSelect={onSelect} />
-      </section>
+      {!guest && (
+        <>
+          <section className="panel">
+            <h2>Your holdings</h2>
+            <HoldingsTable holdings={state.holdings} quotes={quotes} onSelect={onSelect} />
+          </section>
 
-      <section className="panel">
-        <h2>Open orders</h2>
-        <OrdersPanel orders={orders} loading={ordersLoading} error={ordersError} onCancel={cancelOrder} />
-      </section>
+          <section className="panel">
+            <h2>Open orders</h2>
+            <OrdersPanel orders={orders} loading={ordersLoading} error={ordersError} onCancel={cancelOrder} />
+          </section>
 
-      <section className="panel">
-        <h2>Transaction history</h2>
-        <TransactionHistory transactions={state.transactions} />
-      </section>
+          <section className="panel">
+            <h2>Transaction history</h2>
+            <TransactionHistory transactions={state.transactions} />
+          </section>
+        </>
+      )}
     </>
   );
 }

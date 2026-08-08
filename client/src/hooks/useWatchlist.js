@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from '../lib/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export function useWatchlist() {
+  const { user } = useAuth();
   const [watchlist, setWatchlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return undefined;
+    }
     let cancelled = false;
     fetchWatchlist()
       .then((list) => {
@@ -21,7 +27,7 @@ export function useWatchlist() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
 
   const add = useCallback(async (symbol, name) => {
     setError(null);

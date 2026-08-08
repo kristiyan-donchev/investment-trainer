@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { Icon } from './icons.jsx';
 import { GOOGLE_AUTH_URL } from '../lib/api.js';
 
-export default function AuthPage() {
+export default function AuthPage({ onBack }) {
   const [mode, setMode] = useState('login');
   const { login, signup } = useAuth();
   const [username, setUsername] = useState('');
@@ -47,6 +48,11 @@ export default function AuthPage() {
   return (
     <div className="app auth-page">
       <div className="panel auth-panel">
+        {onBack && (
+          <button type="button" className="auth-back-link" onClick={onBack}>
+            <Icon name="arrow-left" size={14} /> Continue browsing
+          </button>
+        )}
         <h1>TradeScrim</h1>
         <p className="tagline">Practice trading with real market prices — using 100% virtual money.</p>
 

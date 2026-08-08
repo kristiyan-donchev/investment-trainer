@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchOrders, placeOrder, cancelOrder } from '../lib/api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 // Pending orders fill via a scheduled server job, not a click in this tab, so
 // poll for status changes rather than only refreshing after a local action.
 const ORDERS_REFRESH_MS = 20000;
 
 export function useOrders() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,10 +19,14 @@ export function useOrders() {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return undefined;
+    }
     refresh().finally(() => setLoading(false));
     const interval = setInterval(refresh, ORDERS_REFRESH_MS);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, [refresh, user]);
 
   const place = useCallback(async (order) => {
     setError(null);

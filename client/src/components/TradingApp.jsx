@@ -10,6 +10,7 @@ import ChallengesPage from './ChallengesPage.jsx';
 import NewsPage from './NewsPage.jsx';
 import AdSlot from './AdSlot.jsx';
 import LoadingScreen from './LoadingScreen.jsx';
+import GuestGate from './GuestGate.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
 
@@ -47,9 +48,23 @@ const PAGE_META = {
   },
 };
 
-export default function TradingApp() {
+const GUEST_GATED_PAGES = {
+  watchlist: {
+    title: 'Log in to build a watchlist',
+    description: 'Track symbols you care about and get notified when they hit your price.',
+  },
+  friends: {
+    title: 'Log in to add friends',
+    description: 'Add friends to compare portfolios and challenge each other.',
+  },
+  challenges: {
+    title: 'Log in to join challenges',
+    description: 'Time-boxed ROI competitions with your friends — badges for participating and winning.',
+  },
+};
+
+export default function TradingApp({ guest = false, onRequestLogin, page, setPage } = {}) {
   const { state, loading, buy, sell, reset, error } = usePortfolio();
-  const [page, setPage] = useState('dashboard');
   const [selectedSymbol, setSelectedSymbol] = useState(null);
   const [quotes, setQuotes] = useState({});
   const [quoteError, setQuoteError] = useState(null);
@@ -123,7 +138,14 @@ export default function TradingApp() {
     <div className="app-shell">
       {showHelp && <Onboarding onClose={closeHelp} />}
 
-      <Sidebar page={page} onNavigate={setPage} onShowHelp={() => setShowHelp(true)} onReset={handleReset} />
+      <Sidebar
+        page={page}
+        onNavigate={setPage}
+        onShowHelp={() => setShowHelp(true)}
+        onReset={handleReset}
+        guest={guest}
+        onRequestLogin={onRequestLogin}
+      />
 
       <main className="main-content">
         <div className="main-layout">
@@ -147,14 +169,19 @@ export default function TradingApp() {
                   buy={buy}
                   sell={sell}
                   error={error}
+                  guest={guest}
+                  onRequestLogin={onRequestLogin}
                 />
               )}
               {page === 'leaderboard' && <LeaderboardPage />}
-              {page === 'watchlist' && <WatchlistPage onSelectSymbol={handleSelectFromWatchlist} />}
               {page === 'learn' && <LearnPage />}
-              {page === 'friends' && <FriendsPage />}
-              {page === 'challenges' && <ChallengesPage />}
               {page === 'news' && <NewsPage />}
+              {guest && GUEST_GATED_PAGES[page] && (
+                <GuestGate onRequestLogin={onRequestLogin} {...GUEST_GATED_PAGES[page]} />
+              )}
+              {!guest && page === 'watchlist' && <WatchlistPage onSelectSymbol={handleSelectFromWatchlist} />}
+              {!guest && page === 'friends' && <FriendsPage />}
+              {!guest && page === 'challenges' && <ChallengesPage />}
             </div>
 
             <footer className="app-footer">
