@@ -11,6 +11,7 @@ import ordersRouter from './routes/orders.js';
 import achievementsRouter from './routes/achievements.js';
 import friendsRouter from './routes/friends.js';
 import challengesRouter from './routes/challenges.js';
+import bugReportsRouter from './routes/bugReports.js';
 import { initSchema } from './db.js';
 import { getPrices } from './lib/quotes.js';
 import { getActiveAlertSymbols, processAlerts } from './lib/alerts.js';
@@ -34,6 +35,7 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/achievements', achievementsRouter);
 app.use('/api/friends', friendsRouter);
 app.use('/api/challenges', challengesRouter);
+app.use('/api/bugs', bugReportsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });

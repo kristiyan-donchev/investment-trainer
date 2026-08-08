@@ -1535,6 +1535,33 @@ input {
   margin: 4px 0 0;
 }
 
+.bug-report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bug-report-form textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--panel-bg);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.bug-report-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.bug-report-form button {
+  align-self: flex-start;
+}
+
 /* Price alerts list */
 .alerts-list {
   display: flex;

@@ -160,5 +160,18 @@ export async function initSchema() {
       PRIMARY KEY (challenge_id, user_id)
     );
     CREATE INDEX IF NOT EXISTS idx_challenge_participants_user ON challenge_participants(user_id);
+
+    -- In-app bug reports (Sidebar "Report a bug"). user_id is nullable —
+    -- deleting an account nulls it out rather than deleting the report, so
+    -- reports outlive the account that filed them (same pattern as
+    -- challenges.created_by).
+    CREATE TABLE IF NOT EXISTS bug_reports (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER REFERENCES users(id),
+      description TEXT NOT NULL,
+      page TEXT,
+      user_agent TEXT,
+      created_at BIGINT NOT NULL
+    );
   `);
 }

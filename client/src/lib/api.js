@@ -195,3 +195,11 @@ export function joinChallenge(id) {
 export function fetchChallengeStandings(id) {
   return getJson(`${BASE}/challenges/${id}/standings`);
 }
+
+export function fetchBugReports() {
+  return getJson(`${BASE}/bugs`).then((d) => d.reports || []);
+}
+
+export function submitBugReport({ description, page }) {
+  return postJson(`${BASE}/bugs`, { description, page }).then((d) => d.reports || []);
+}
