@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Icon } from './icons.jsx';
 import { fetchQuote } from '../lib/api.js';
 
 const QUOTE_REFRESH_MS = 20000;
@@ -71,7 +72,7 @@ export default function Watchlist({ watchlist, loading, error, onRemove, onSelec
                     onRemove(w.symbol);
                   }}
                 >
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               </td>
             </tr>

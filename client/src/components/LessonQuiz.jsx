@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from './icons.jsx';
 
 export default function LessonQuiz({ questions, onAllCorrect }) {
   const [selected, setSelected] = useState({});
@@ -56,14 +57,26 @@ export default function LessonQuiz({ questions, onAllCorrect }) {
             </div>
             {pickedIndex != null && (
               <p className={isSolved ? 'quiz-feedback correct' : 'quiz-feedback incorrect'}>
-                {isSolved ? '✓ Correct — ' : '✗ Not quite — '}
+                {isSolved ? (
+                  <>
+                    <Icon name="check" size={14} /> Correct —{' '}
+                  </>
+                ) : (
+                  <>
+                    <Icon name="x-circle" size={14} /> Not quite —{' '}
+                  </>
+                )}
                 {q.explanation}
               </p>
             )}
           </div>
         );
       })}
-      {allCorrect && <p className="quiz-complete">🎉 Lesson complete — nice work!</p>}
+      {allCorrect && (
+        <p className="quiz-complete">
+          <Icon name="sparkles" size={14} /> Lesson complete — nice work!
+        </p>
+      )}
     </div>
   );
 }

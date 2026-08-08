@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from './icons.jsx';
 import { createAlert } from '../lib/api.js';
 
 export default function CreateAlertForm({ symbol, name }) {
@@ -28,7 +29,7 @@ export default function CreateAlertForm({ symbol, name }) {
   if (!open) {
     return (
       <button type="button" className="secondary-button alert-toggle" onClick={() => setOpen(true)}>
-        🔔 Set price alert
+        <Icon name="bell" size={14} /> Set price alert
       </button>
     );
   }
@@ -52,7 +53,7 @@ export default function CreateAlertForm({ symbol, name }) {
         {saving ? 'Saving…' : 'Create alert'}
       </button>
       <button type="button" className="icon-button" aria-label="Cancel" onClick={() => setOpen(false)}>
-        ✕
+        <Icon name="x" size={16} />
       </button>
       {error && <div className="form-error">{error}</div>}
       {success && <div className="form-success">Alert created — check the Watchlist page.</div>}

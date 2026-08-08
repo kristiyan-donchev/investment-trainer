@@ -1,3 +1,5 @@
+import { Icon } from './icons.jsx';
+
 const ORDER_TYPE_LABELS = { LIMIT: 'Limit', STOP: 'Stop', STOP_LIMIT: 'Stop-limit' };
 const STATUS_LABELS = { PENDING: 'Pending', FILLED: 'Filled', CANCELLED: 'Cancelled' };
 
@@ -52,7 +54,7 @@ export default function OrdersPanel({ orders, loading, error, onCancel }) {
             <td>
               {o.status === 'PENDING' && (
                 <button type="button" className="icon-button" aria-label="Cancel order" onClick={() => onCancel(o.id)}>
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               )}
             </td>

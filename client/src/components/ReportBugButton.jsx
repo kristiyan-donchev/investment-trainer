@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Icon } from './icons.jsx';
 import { fetchBugReports, submitBugReport } from '../lib/api.js';
 
 function formatDate(ts) {
@@ -49,8 +50,8 @@ export default function ReportBugButton({ page }) {
   return (
     <>
       <button type="button" className="sidebar-nav-item" onClick={() => setOpen(true)}>
-        <span className="sidebar-nav-icon" aria-hidden="true">
-          🐛
+        <span className="sidebar-nav-icon">
+          <Icon name="bug" size={18} />
         </span>
         <span className="sidebar-nav-label">Report a bug</span>
       </button>
@@ -62,7 +63,7 @@ export default function ReportBugButton({ page }) {
               <div className="modal-header">
                 <h2>Report a bug</h2>
                 <button className="icon-button" onClick={close} aria-label="Close">
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               </div>
 

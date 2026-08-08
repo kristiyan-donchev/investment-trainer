@@ -1,4 +1,5 @@
 import { GLOSSARY_TERMS } from '../lib/glossary.js';
+import { Icon } from './icons.jsx';
 
 export default function Onboarding({ onClose }) {
   return (
@@ -7,7 +8,7 @@ export default function Onboarding({ onClose }) {
         <div className="modal-header">
           <h2>Welcome to TradeScrim</h2>
           <button className="icon-button" onClick={onClose} aria-label="Close">
-            ✕
+            <Icon name="x" size={16} />
           </button>
         </div>
 

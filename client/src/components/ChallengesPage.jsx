@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchChallenges, createChallenge, joinChallenge, fetchChallengeStandings } from '../lib/api.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { Icon } from './icons.jsx';
 
 const DURATIONS = [
   { days: 3, label: '3 days' },
@@ -9,7 +10,21 @@ const DURATIONS = [
   { days: 30, label: '1 month' },
 ];
 
-const BADGE_LABELS = { WINNER: '🏆 Winner', TOP_3: '🥉 Top 3', PARTICIPANT: '🎯 Participant' };
+const BADGES = {
+  WINNER: { icon: 'trophy', label: 'Winner' },
+  TOP_3: { icon: 'medal', label: 'Top 3' },
+  PARTICIPANT: { icon: 'target', label: 'Participant' },
+};
+
+function BadgeLabel({ badge }) {
+  const meta = BADGES[badge];
+  if (!meta) return badge;
+  return (
+    <>
+      <Icon name={meta.icon} size={14} /> {meta.label}
+    </>
+  );
+}
 
 function formatDate(ts) {
   return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -41,7 +56,7 @@ function StandingsView({ challengeId, onBack }) {
   return (
     <section className="panel">
       <button type="button" className="icon-button" aria-label="Back to challenges" onClick={onBack}>
-        ← Back
+        <Icon name="arrow-left" size={16} /> Back
       </button>
       {loading && <p className="empty-state">Loading standings…</p>}
       {error && <div className="form-error">{error}</div>}
@@ -78,7 +93,11 @@ function StandingsView({ challengeId, onBack }) {
                         {entry.roiPercent >= 0 ? '+' : ''}
                         {entry.roiPercent.toFixed(2)}%
                       </td>
-                      {data.finalized && <td>{BADGE_LABELS[entry.badge] || entry.badge}</td>}
+                      {data.finalized && (
+                        <td>
+                          <BadgeLabel badge={entry.badge} />
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -225,7 +244,7 @@ export default function ChallengesPage() {
                       <strong>{c.title}</strong>
                       <span className="row-subtext"> ended {formatDate(c.endsAt)}</span>
                     </span>
-                    <span>{c.badge ? BADGE_LABELS[c.badge] || c.badge : 'Scoring…'}</span>
+                    <span>{c.badge ? <BadgeLabel badge={c.badge} /> : 'Scoring…'}</span>
                   </div>
                 ))}
               </div>

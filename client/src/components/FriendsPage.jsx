@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from './icons.jsx';
 import {
   fetchFriends,
   sendFriendRequest,
@@ -124,7 +125,7 @@ export default function FriendsPage() {
                         aria-label={`Decline ${r.username}'s request`}
                         onClick={() => handleDecline(r.id)}
                       >
-                        ✕
+                        <Icon name="x" size={16} />
                       </button>
                     </div>
                   </div>
@@ -148,7 +149,7 @@ export default function FriendsPage() {
                       aria-label={`Cancel request to ${r.username}`}
                       onClick={() => handleDecline(r.id)}
                     >
-                      ✕
+                      <Icon name="x" size={16} />
                     </button>
                   </div>
                 ))}
@@ -176,7 +177,7 @@ export default function FriendsPage() {
                       aria-label={`Remove ${f.username} as a friend`}
                       onClick={() => handleUnfriend(f.userId)}
                     >
-                      ✕
+                      <Icon name="x" size={16} />
                     </button>
                   </div>
                 ))}

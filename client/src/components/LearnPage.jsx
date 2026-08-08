@@ -3,6 +3,7 @@ import { LEARN_TOPICS } from '../lib/lessons.js';
 import { GLOSSARY_TERMS } from '../lib/glossary.js';
 import { useLessonProgress } from '../hooks/useLessonProgress.js';
 import LessonQuiz from './LessonQuiz.jsx';
+import { Icon } from './icons.jsx';
 
 const GLOSSARY_LESSON_ID = 'glossary-reference';
 
@@ -50,7 +51,7 @@ export default function LearnPage() {
           {LEARN_TOPICS.map((topic) => (
             <div className="learn-topic-group" key={topic.id}>
               <div className="learn-topic-title">
-                <span aria-hidden="true">{topic.icon}</span> {topic.title}
+                <Icon name={topic.icon} size={16} /> {topic.title}
               </div>
               <div className="learn-lesson-list">
                 {topic.lessons.map((lesson) => (
@@ -60,8 +61,8 @@ export default function LearnPage() {
                     className={lesson.id === activeLessonId ? 'learn-lesson-item active' : 'learn-lesson-item'}
                     onClick={() => setActiveLessonId(lesson.id)}
                   >
-                    <span className="learn-lesson-check" aria-hidden="true">
-                      {isComplete(lesson.id) ? '✓' : ''}
+                    <span className="learn-lesson-check">
+                      {isComplete(lesson.id) ? <Icon name="check" size={14} /> : ''}
                     </span>
                     {lesson.title}
                   </button>
@@ -72,7 +73,7 @@ export default function LearnPage() {
 
           <div className="learn-topic-group">
             <div className="learn-topic-title">
-              <span aria-hidden="true">📖</span> Reference
+              <Icon name="book-open" size={16} /> Reference
             </div>
             <div className="learn-lesson-list">
               <button
@@ -80,8 +81,8 @@ export default function LearnPage() {
                 className={activeLessonId === GLOSSARY_LESSON_ID ? 'learn-lesson-item active' : 'learn-lesson-item'}
                 onClick={() => setActiveLessonId(GLOSSARY_LESSON_ID)}
               >
-                <span className="learn-lesson-check" aria-hidden="true">
-                  {isComplete(GLOSSARY_LESSON_ID) ? '✓' : ''}
+                <span className="learn-lesson-check">
+                  {isComplete(GLOSSARY_LESSON_ID) ? <Icon name="check" size={14} /> : ''}
                 </span>
                 Glossary
               </button>
@@ -103,7 +104,9 @@ export default function LearnPage() {
                 ))}
               </dl>
               {isComplete(GLOSSARY_LESSON_ID) ? (
-                <p className="quiz-complete">✓ Reviewed</p>
+                <p className="quiz-complete">
+                  <Icon name="check" size={14} /> Reviewed
+                </p>
               ) : (
                 <button type="button" className="secondary-button" onClick={() => markComplete(GLOSSARY_LESSON_ID)}>
                   Mark as reviewed

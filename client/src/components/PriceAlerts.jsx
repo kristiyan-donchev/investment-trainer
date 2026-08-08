@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from './icons.jsx';
 import { fetchAlerts, cancelAlert } from '../lib/api.js';
 
 const POLL_MS = 20000;
@@ -63,7 +64,7 @@ export default function PriceAlerts() {
                 {a.targetPrice.toFixed(2)}
               </span>
               <button type="button" className="icon-button" aria-label="Cancel alert" onClick={() => handleCancel(a.id)}>
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
           ))}
@@ -76,11 +77,11 @@ export default function PriceAlerts() {
           {triggered.map((a) => (
             <div className={a.justTriggered ? 'alert-row alert-triggered' : 'alert-row'} key={a.id}>
               <span>
-                🔔 <strong>{a.symbol}</strong> {a.direction === 'above' ? 'rose above' : 'fell below'} $
+                <Icon name="bell" size={14} /> <strong>{a.symbol}</strong> {a.direction === 'above' ? 'rose above' : 'fell below'} $
                 {a.targetPrice.toFixed(2)} — hit ${a.triggeredPrice?.toFixed(2)} on {formatDate(a.triggeredAt)}
               </span>
               <button type="button" className="icon-button" aria-label="Dismiss alert" onClick={() => handleCancel(a.id)}>
-                ✕
+                <Icon name="x" size={16} />
               </button>
             </div>
           ))}

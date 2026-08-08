@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import ProfileMenu from './ProfileMenu.jsx';
 import ReportBugButton from './ReportBugButton.jsx';
+import { Icon } from './icons.jsx';
 import { fetchUnseenAlertCount, fetchUnseenFriendRequestCount } from '../lib/api.js';
 
 const NAV_ITEMS = [
-  { key: 'dashboard', label: 'Dashboard', icon: '📊' },
-  { key: 'news', label: 'News', icon: '📰' },
-  { key: 'learn', label: 'Learn', icon: '🎓' },
-  { key: 'watchlist', label: 'Watchlist', icon: '👁️' },
-  { key: 'challenges', label: 'Challenges', icon: '🎯' },
-  { key: 'friends', label: 'Friends', icon: '🧑‍🤝‍🧑' },
-  { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
+  { key: 'dashboard', label: 'Dashboard', icon: 'bar-chart' },
+  { key: 'news', label: 'News', icon: 'newspaper' },
+  { key: 'learn', label: 'Learn', icon: 'graduation-cap' },
+  { key: 'watchlist', label: 'Watchlist', icon: 'eye' },
+  { key: 'challenges', label: 'Challenges', icon: 'target' },
+  { key: 'friends', label: 'Friends', icon: 'users' },
+  { key: 'leaderboard', label: 'Leaderboard', icon: 'trophy' },
 ];
 
 const UNSEEN_POLL_MS = 30000;
@@ -44,8 +45,8 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
   return (
     <nav className="sidebar">
       <button type="button" className="sidebar-logo" onClick={() => onNavigate('dashboard')}>
-        <span className="sidebar-logo-mark" aria-hidden="true">
-          📈
+        <span className="sidebar-logo-mark">
+          <Icon name="trending-up" size={22} />
         </span>
         <span className="sidebar-logo-text">TradeScrim</span>
       </button>
@@ -58,8 +59,8 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
             className={page === item.key ? 'sidebar-nav-item active' : 'sidebar-nav-item'}
             onClick={() => onNavigate(item.key)}
           >
-            <span className="sidebar-nav-icon" aria-hidden="true">
-              {item.icon}
+            <span className="sidebar-nav-icon">
+              <Icon name={item.icon} size={18} />
             </span>
             <span className="sidebar-nav-label">{item.label}</span>
             {item.key === 'watchlist' && unseenAlerts > 0 && (
@@ -74,8 +75,8 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
 
       <div className="sidebar-footer">
         <button type="button" className="sidebar-nav-item" onClick={onShowHelp}>
-          <span className="sidebar-nav-icon" aria-hidden="true">
-            ❔
+          <span className="sidebar-nav-icon">
+            <Icon name="help-circle" size={18} />
           </span>
           <span className="sidebar-nav-label">Help &amp; terms</span>
         </button>

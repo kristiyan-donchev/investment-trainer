@@ -7,7 +7,7 @@ export const LEARN_TOPICS = [
   {
     id: 'getting-started',
     title: 'Getting Started',
-    icon: '🚀',
+    icon: 'rocket',
     lessons: [
       {
         id: 'what-is-paper-trading',
@@ -101,7 +101,7 @@ export const LEARN_TOPICS = [
   {
     id: 'reading-the-market',
     title: 'Reading the Market',
-    icon: '📈',
+    icon: 'trending-up',
     lessons: [
       {
         id: 'ticker-symbols-quotes',
@@ -184,7 +184,7 @@ export const LEARN_TOPICS = [
   {
     id: 'placing-orders',
     title: 'Placing Orders',
-    icon: '🧾',
+    icon: 'receipt',
     lessons: [
       {
         id: 'market-orders',
@@ -262,7 +262,7 @@ export const LEARN_TOPICS = [
   {
     id: 'order-types',
     title: 'Order Types',
-    icon: '🎛️',
+    icon: 'sliders',
     lessons: [
       {
         id: 'limit-orders',
@@ -398,7 +398,7 @@ export const LEARN_TOPICS = [
   {
     id: 'risk-and-diversification',
     title: 'Risk & Diversification',
-    icon: '⚖️',
+    icon: 'scale',
     lessons: [
       {
         id: 'volatility',
@@ -491,7 +491,7 @@ export const LEARN_TOPICS = [
   {
     id: 'tracking-performance',
     title: 'Tracking Performance',
-    icon: '📊',
+    icon: 'bar-chart',
     lessons: [
       {
         id: 'profit-and-loss',
@@ -579,7 +579,7 @@ export const LEARN_TOPICS = [
   {
     id: 'investing-mindset',
     title: 'Investing Mindset',
-    icon: '🧠',
+    icon: 'brain',
     lessons: [
       {
         id: 'long-term-thinking',

@@ -1,4 +1,5 @@
 import SearchBar from './SearchBar.jsx';
+import { Icon } from './icons.jsx';
 import PriceChart from './PriceChart.jsx';
 import PerformanceChart from './PerformanceChart.jsx';
 import PortfolioBreakdown from './PortfolioBreakdown.jsx';
@@ -82,7 +83,7 @@ export default function DashboardPage({
                     watching ? unwatch(selectedQuote.symbol) : watch(selectedQuote.symbol, selectedQuote.name)
                   }
                 >
-                  {watching ? '★ Watching' : '☆ Watch'}
+                  <Icon name="star" size={14} filled={watching} /> {watching ? 'Watching' : 'Watch'}
                 </button>
                 <CreateAlertForm symbol={selectedQuote.symbol} name={selectedQuote.name} />
               </div>

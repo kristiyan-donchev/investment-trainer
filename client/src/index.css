@@ -65,6 +65,12 @@ input {
   font-family: inherit;
 }
 
+.icon {
+  display: inline-block;
+  vertical-align: -3px;
+  flex-shrink: 0;
+}
+
 .app {
   max-width: 960px;
   margin: 0 auto;

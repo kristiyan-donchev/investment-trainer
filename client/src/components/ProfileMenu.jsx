@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { Icon } from './icons.jsx';
 import { fetchAchievements } from '../lib/api.js';
 
 const THEME_OPTIONS = [
-  { value: 'light', label: 'Light', icon: '☀️' },
-  { value: 'dark', label: 'Dark', icon: '🌙' },
-  { value: 'system', label: 'System', icon: '💻' },
+  { value: 'light', label: 'Light', icon: 'sun' },
+  { value: 'dark', label: 'Dark', icon: 'moon' },
+  { value: 'system', label: 'System', icon: 'monitor' },
 ];
 
 function formatMemberSince(createdAt) {
@@ -208,7 +209,7 @@ export default function ProfileMenu({ onReset }) {
               <div className="modal-header">
                 <h2>Your profile</h2>
                 <button className="icon-button" onClick={() => setActiveModal(null)} aria-label="Close">
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               </div>
 
@@ -249,8 +250,8 @@ export default function ProfileMenu({ onReset }) {
                           onClick={() => setSelectedAchievementId(a.id === selectedAchievementId ? null : a.id)}
                           aria-pressed={a.id === selectedAchievementId}
                         >
-                          <span className="achievement-icon" aria-hidden="true">
-                            {a.icon}
+                          <span className="achievement-icon">
+                            <Icon name={a.icon} size={24} />
                           </span>
                           <span className="achievement-title">{a.title}</span>
                         </button>
@@ -261,16 +262,20 @@ export default function ProfileMenu({ onReset }) {
                       {selectedAchievement ? (
                         <>
                           <div className="achievement-detail-header">
-                            <span className="achievement-icon" aria-hidden="true">
-                              {selectedAchievement.icon}
+                            <span className="achievement-icon">
+                              <Icon name={selectedAchievement.icon} size={20} />
                             </span>
                             <strong>{selectedAchievement.title}</strong>
                           </div>
                           <p className="achievement-detail-desc">How to earn it: {selectedAchievement.description}</p>
                           <p className={selectedAchievement.unlocked ? 'achievement-detail-status earned' : 'achievement-detail-status'}>
-                            {selectedAchievement.unlocked
-                              ? `✓ Earned on ${formatEarnedDate(selectedAchievement.earnedAt)}`
-                              : 'Not yet earned'}
+                            {selectedAchievement.unlocked ? (
+                              <>
+                                <Icon name="check" size={14} /> Earned on {formatEarnedDate(selectedAchievement.earnedAt)}
+                              </>
+                            ) : (
+                              'Not yet earned'
+                            )}
                           </p>
                         </>
                       ) : (
@@ -292,7 +297,7 @@ export default function ProfileMenu({ onReset }) {
               <div className="modal-header">
                 <h2>Settings</h2>
                 <button className="icon-button" onClick={() => setActiveModal(null)} aria-label="Close">
-                  ✕
+                  <Icon name="x" size={16} />
                 </button>
               </div>
 
@@ -309,7 +314,7 @@ export default function ProfileMenu({ onReset }) {
                       className={mode === opt.value ? 'theme-switch-option active' : 'theme-switch-option'}
                       onClick={() => setMode(opt.value)}
                     >
-                      <span aria-hidden="true">{opt.icon}</span>
+                      <Icon name={opt.icon} size={16} />
                       {opt.label}
                     </button>
                   ))}
