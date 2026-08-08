@@ -29,7 +29,35 @@ const CLIENT_ORIGIN = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').spl
 // header for CORS. CLIENT_APP_URL exists separately for cases where the page Google
 // should redirect back to after login differs from that bare origin.
 const CLIENT_APP_URL = process.env.CLIENT_APP_URL || CLIENT_ORIGIN;
-const OAUTH_STATE_COOKIE = 'tradescrim_oauth_state';
+
+// The OAuth state param is tracked here, server-side, rather than in a
+// cookie on the browser. A cookie was the standard approach, but real-world
+// testing found iOS Safari dropping it entirely across the redirect through
+// accounts.google.com — the callback request arrived with no Cookie header
+// at all — even though it's a same-host, top-level-navigation-only cookie
+// that ordinary SameSite rules say should survive. A server-side, single-use,
+// short-lived nonce sidesteps browser cookie behavior completely: the state
+// value's own entropy plus one-time use is what prevents CSRF, not tying it
+// to a particular browser session.
+const PENDING_OAUTH_STATES = new Map(); // state -> expiresAt
+const OAUTH_STATE_TTL_MS = 5 * 60 * 1000;
+
+function issueOAuthState() {
+  const now = Date.now();
+  for (const [key, expiresAt] of PENDING_OAUTH_STATES) {
+    if (expiresAt < now) PENDING_OAUTH_STATES.delete(key);
+  }
+  const state = crypto.randomBytes(16).toString('hex');
+  PENDING_OAUTH_STATES.set(state, now + OAUTH_STATE_TTL_MS);
+  return state;
+}
+
+function consumeOAuthState(state) {
+  const expiresAt = PENDING_OAUTH_STATES.get(state);
+  PENDING_OAUTH_STATES.delete(state);
+  return typeof expiresAt === 'number' && expiresAt >= Date.now();
+}
+
 // Scopes the cookie to the shared parent domain (api.tradescrim.com and
 // tradescrim.com are then same-site siblings) instead of relying on
 // SameSite=None alone — iOS Safari (and every browser on iOS, since Apple
@@ -130,13 +158,7 @@ router.get('/google', (req, res) => {
     return res.status(500).send('Google sign-in is not configured on this server.');
   }
 
-  const state = crypto.randomBytes(16).toString('hex');
-  res.cookie(OAUTH_STATE_COOKIE, state, {
-    httpOnly: true,
-    sameSite: IS_PROD ? 'none' : 'lax',
-    secure: IS_PROD,
-    maxAge: 5 * 60 * 1000,
-  });
+  const state = issueOAuthState();
 
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
@@ -151,16 +173,11 @@ router.get('/google', (req, res) => {
 
 router.get('/google/callback', async (req, res) => {
   const { code, state } = req.query;
-  const cookieState = req.cookies?.[OAUTH_STATE_COOKIE];
-  res.clearCookie(OAUTH_STATE_COOKIE, CLEAR_COOKIE_OPTIONS);
 
-  if (!code || !state || state !== cookieState) {
+  if (!code || !state || !consumeOAuthState(state)) {
     console.error('google auth error: state check failed', {
       hasCode: Boolean(code),
       hasState: Boolean(state),
-      hasCookieState: Boolean(cookieState),
-      statesMatch: state === cookieState,
-      cookieHeaderPresent: Boolean(req.headers.cookie),
       userAgent: req.headers['user-agent'],
     });
     return res.redirect(`${CLIENT_APP_URL}?authError=google`);
