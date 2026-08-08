@@ -8,6 +8,24 @@ export function AuthProvider({ children }) {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const loginToken = params.get('loginToken');
+    if (loginToken) {
+      // Strip it before the exchange call resolves, not after — React 18
+      // StrictMode double-invokes effects in dev, and this token is
+      // single-use server-side, so the URL must already be clean by the
+      // time a second invocation (if any) re-reads it.
+      params.delete('loginToken');
+      const rest = params.toString();
+      window.history.replaceState({}, '', window.location.pathname + (rest ? `?${rest}` : ''));
+      api
+        .exchangeGoogleLogin(loginToken)
+        .then(setUser)
+        .catch(() => setUser(null))
+        .finally(() => setCheckingSession(false));
+      return;
+    }
+
     api
       .fetchCurrentUser()
       .then(setUser)

@@ -66,6 +66,14 @@ export function login({ username, password }) {
   return postJson(`${BASE}/auth/login`, { username, password }).then((d) => d.user);
 }
 
+// Trades a one-time token (from the ?loginToken= the Google callback redirects
+// back with) for a real session — see the comment on PENDING_LOGIN_EXCHANGES
+// in server/src/routes/auth.js for why the session cookie isn't set directly
+// on that redirect.
+export function exchangeGoogleLogin(token) {
+  return postJson(`${BASE}/auth/google/exchange`, { token }).then((d) => d.user);
+}
+
 export function logout() {
   return postJson(`${BASE}/auth/logout`, {});
 }

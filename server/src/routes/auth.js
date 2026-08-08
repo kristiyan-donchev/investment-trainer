@@ -58,6 +58,36 @@ function consumeOAuthState(state) {
   return typeof expiresAt === 'number' && expiresAt >= Date.now();
 }
 
+// Google sign-in still fails on iOS even with the state fix above: the
+// callback response itself is the direct target of a cross-site redirect
+// (the previous page was accounts.google.com), and Safari drops Set-Cookie
+// on that response regardless of the cookie's own Domain/SameSite attributes
+// — it's the response's redirect provenance that gets flagged, not the
+// cookie. The fix is to never set the session cookie on that response at
+// all: redirect back with a one-time exchange token instead, which the
+// frontend immediately trades for a session via a normal same-origin-style
+// fetch() — the same mechanism password login already uses successfully,
+// since a JS-initiated fetch isn't part of any redirect chain.
+const PENDING_LOGIN_EXCHANGES = new Map(); // token -> { userId, expiresAt }
+const LOGIN_EXCHANGE_TTL_MS = 2 * 60 * 1000;
+
+function issueLoginExchangeToken(userId) {
+  const now = Date.now();
+  for (const [key, entry] of PENDING_LOGIN_EXCHANGES) {
+    if (entry.expiresAt < now) PENDING_LOGIN_EXCHANGES.delete(key);
+  }
+  const token = crypto.randomBytes(24).toString('hex');
+  PENDING_LOGIN_EXCHANGES.set(token, { userId, expiresAt: now + LOGIN_EXCHANGE_TTL_MS });
+  return token;
+}
+
+function consumeLoginExchangeToken(token) {
+  const entry = PENDING_LOGIN_EXCHANGES.get(token);
+  PENDING_LOGIN_EXCHANGES.delete(token);
+  if (!entry || entry.expiresAt < Date.now()) return null;
+  return entry.userId;
+}
+
 // Scopes the cookie to the shared parent domain (api.tradescrim.com and
 // tradescrim.com are then same-site siblings) instead of relying on
 // SameSite=None alone — iOS Safari (and every browser on iOS, since Apple
@@ -216,12 +246,35 @@ router.get('/google/callback', async (req, res) => {
       user = await createGoogleUser({ username, email: profile.email, googleId: profile.sub });
     }
 
-    const token = signToken(user.id);
-    res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
-    res.redirect(CLIENT_APP_URL);
+    const exchangeToken = issueLoginExchangeToken(user.id);
+    res.redirect(`${CLIENT_APP_URL}?loginToken=${exchangeToken}`);
   } catch (err) {
     console.error('google auth error', err.message);
     res.redirect(`${CLIENT_APP_URL}?authError=google`);
+  }
+});
+
+// The frontend calls this immediately on load when it sees ?loginToken= in
+// the URL — see the comment on PENDING_LOGIN_EXCHANGES above for why the
+// session cookie is set here, via a normal fetch(), rather than directly on
+// the /google/callback redirect.
+router.post('/google/exchange', async (req, res) => {
+  const { token } = req.body || {};
+  const userId = typeof token === 'string' ? consumeLoginExchangeToken(token) : null;
+  if (!userId) {
+    return res.status(400).json({ error: 'This sign-in link has expired. Please try again.' });
+  }
+  try {
+    const user = await findUserById(userId);
+    if (!user) {
+      return res.status(400).json({ error: 'This sign-in link has expired. Please try again.' });
+    }
+    const sessionToken = signToken(user.id);
+    res.cookie(COOKIE_NAME, sessionToken, COOKIE_OPTIONS);
+    res.json({ user: toPublicUser(user) });
+  } catch (err) {
+    console.error('google exchange error', err.message);
+    res.status(500).json({ error: 'Something went wrong signing you in.' });
   }
 });
 
