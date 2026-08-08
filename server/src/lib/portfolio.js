@@ -244,23 +244,22 @@ export async function getPerformance(userId, range) {
   return { range, startingCash: STARTING_CASH, points };
 }
 
-// Ranks every user by portfolio return over the requested window: (value now -
-// value at window start) / value at window start. For a user who joined after
-// the window start, the window is clamped to their signup (value at signup is
-// always exactly STARTING_CASH, before any trades), so 'all' naturally reduces
-// to total return since inception without needing a special case. Price
-// history is fetched once per symbol and shared across all users to avoid
-// hitting Yahoo once per user.
-export async function getLeaderboard(range) {
-  const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
-  const now = Date.now();
+// Ranks a given set of {userId, username, periodStart} participants by
+// portfolio return over their individual window: (value now - value at
+// periodStart) / value at periodStart. Shared by getLeaderboard() (every
+// user, periodStart clamped to signup) and challenge standings (just the
+// challenge's participants, periodStart clamped to when each of them joined).
+// Price history is fetched once per symbol and shared across all
+// participants to avoid hitting Yahoo once per user.
+export async function computeRoiRankings(participants, { endTime, interval = '1d' } = {}) {
+  const now = endTime ?? Date.now();
+  if (participants.length === 0) return [];
 
-  const usersResult = await pool.query(`SELECT id, username, created_at FROM users ORDER BY id`);
-  const users = usersResult.rows;
-  if (users.length === 0) return { range, leaderboard: [] };
-
+  const userIds = participants.map((p) => p.userId);
   const txResult = await pool.query(
-    `SELECT user_id, symbol, type, shares, price, timestamp FROM transactions ORDER BY user_id, timestamp ASC`
+    `SELECT user_id, symbol, type, shares, price, timestamp FROM transactions
+     WHERE user_id = ANY($1::int[]) ORDER BY user_id, timestamp ASC`,
+    [userIds]
   );
   const txByUser = {};
   for (const t of txResult.rows) {
@@ -269,25 +268,20 @@ export async function getLeaderboard(range) {
   }
   const symbols = [...new Set(txResult.rows.map((t) => t.symbol))];
 
-  const rangeStart = config.days != null ? now - config.days * 24 * 60 * 60 * 1000 : null;
-  const earliestCreatedAt = Math.min(...users.map((u) => Number(u.created_at)));
-  const fetchPeriod1 = new Date(Math.min(rangeStart ?? earliestCreatedAt, earliestCreatedAt, now - 24 * 60 * 60 * 1000));
+  const earliestPeriodStart = Math.min(...participants.map((p) => p.periodStart));
+  const fetchPeriod1 = new Date(Math.min(earliestPeriodStart, now - 24 * 60 * 60 * 1000));
   const period2 = new Date(now);
 
   const priceHistories = {};
   await Promise.all(
     symbols.map(async (symbol) => {
       try {
-        const chart = await yahooFinance.chart(symbol, {
-          period1: fetchPeriod1,
-          period2,
-          interval: config.interval,
-        });
+        const chart = await yahooFinance.chart(symbol, { period1: fetchPeriod1, period2, interval });
         priceHistories[symbol] = (chart.quotes || [])
           .filter((q) => q.close != null)
           .map((q) => ({ time: new Date(q.date).getTime(), close: q.close }));
       } catch (err) {
-        console.error(`leaderboard: failed to fetch history for ${symbol}`, err.message);
+        console.error(`roi rankings: failed to fetch history for ${symbol}`, err.message);
         priceHistories[symbol] = [];
       }
     })
@@ -326,31 +320,68 @@ export async function getLeaderboard(range) {
     return cash + holdingsValue;
   }
 
-  const leaderboard = users.map((user) => {
-    const transactions = txByUser[user.id] || [];
-    const createdAt = Number(user.created_at);
-    const periodStart = rangeStart != null ? Math.max(rangeStart, createdAt) : createdAt;
-
-    const startValue = valueAt(transactions, periodStart);
+  const rankings = participants.map((p) => {
+    const transactions = txByUser[p.userId] || [];
+    const startValue = valueAt(transactions, p.periodStart);
     const currentValue = valueAt(transactions, now);
     const roiPercent = startValue > 0 ? ((currentValue - startValue) / startValue) * 100 : 0;
-
-    return { userId: user.id, username: user.username, value: currentValue, roiPercent };
+    return { userId: p.userId, username: p.username, value: currentValue, roiPercent };
   });
 
-  leaderboard.sort((a, b) => b.roiPercent - a.roiPercent);
-  leaderboard.forEach((entry, i) => {
-    entry.rank = i + 1;
+  rankings.sort((a, b) => b.roiPercent - a.roiPercent);
+  // Standard competition ranking (1, 1, 3 — not 1, 1, 2), so a tie at the top
+  // produces multiple winners instead of an arbitrary, insertion-order pick.
+  let prevRoi = null;
+  let prevRank = 0;
+  rankings.forEach((entry, i) => {
+    if (prevRoi !== null && Math.abs(entry.roiPercent - prevRoi) < 1e-9) {
+      entry.rank = prevRank;
+    } else {
+      entry.rank = i + 1;
+      prevRank = entry.rank;
+    }
+    prevRoi = entry.roiPercent;
   });
 
-  return { range, leaderboard: leaderboard.slice(0, 100) };
+  return rankings;
+}
+
+// For a user who joined after the window start, the window is clamped to
+// their signup (value at signup is always exactly STARTING_CASH, before any
+// trades), so 'all' naturally reduces to total return since inception
+// without needing a special case. `userIds`, when passed, scopes the board to
+// that set of users (e.g. a friends-only view) instead of everyone.
+export async function getLeaderboard(range, { userIds } = {}) {
+  const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
+  const now = Date.now();
+
+  const usersResult = await pool.query(
+    `SELECT id, username, created_at FROM users WHERE ($1::int[] IS NULL OR id = ANY($1::int[])) ORDER BY id`,
+    [userIds ?? null]
+  );
+  const users = usersResult.rows;
+  if (users.length === 0) return { range, leaderboard: [] };
+
+  const rangeStart = config.days != null ? now - config.days * 24 * 60 * 60 * 1000 : null;
+  const participants = users.map((user) => {
+    const createdAt = Number(user.created_at);
+    return {
+      userId: user.id,
+      username: user.username,
+      periodStart: rangeStart != null ? Math.max(rangeStart, createdAt) : createdAt,
+    };
+  });
+
+  const rankings = await computeRoiRankings(participants, { endTime: now, interval: config.interval });
+  return { range, leaderboard: rankings.slice(0, 100) };
 }
 
 // Leaderboard cuts other than ROI. Unlike getLeaderboard() above, these never
 // need Yahoo price history — trade count, best single win, and current
 // diversification are all directly queryable from transactions/holdings.
+// `userIds`, when passed, scopes each board to that set of users.
 
-export async function getMostActiveLeaderboard(range) {
+export async function getMostActiveLeaderboard(range, { userIds } = {}) {
   const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
   const windowStart = config.days != null ? Date.now() - config.days * 24 * 60 * 60 * 1000 : null;
 
@@ -359,15 +390,16 @@ export async function getMostActiveLeaderboard(range) {
             COALESCE(COUNT(t.id), 0)::int AS "tradeCount"
      FROM users u
      LEFT JOIN transactions t ON t.user_id = u.id AND ($1::bigint IS NULL OR t.timestamp >= $1)
+     WHERE ($2::int[] IS NULL OR u.id = ANY($2::int[]))
      GROUP BY u.id, u.username
      ORDER BY "tradeCount" DESC, u.id ASC`,
-    [windowStart]
+    [windowStart, userIds ?? null]
   );
   const leaderboard = result.rows.map((row, i) => ({ ...row, rank: i + 1 }));
   return { range, category: 'active', leaderboard: leaderboard.slice(0, 100) };
 }
 
-export async function getBiggestWinLeaderboard(range) {
+export async function getBiggestWinLeaderboard(range, { userIds } = {}) {
   const config = PERFORMANCE_RANGE_CONFIG[range] || PERFORMANCE_RANGE_CONFIG['1mo'];
   const windowStart = config.days != null ? Date.now() - config.days * 24 * 60 * 60 * 1000 : null;
 
@@ -378,22 +410,25 @@ export async function getBiggestWinLeaderboard(range) {
      FROM users u
      LEFT JOIN transactions t ON t.user_id = u.id AND t.type = 'SELL' AND t.realized_pnl IS NOT NULL
        AND ($1::bigint IS NULL OR t.timestamp >= $1)
+     WHERE ($2::int[] IS NULL OR u.id = ANY($2::int[]))
      GROUP BY u.id, u.username
      ORDER BY "bestWin" DESC, u.id ASC`,
-    [windowStart]
+    [windowStart, userIds ?? null]
   );
   const leaderboard = result.rows.map((row, i) => ({ ...row, rank: i + 1 }));
   return { range, category: 'biggest_win', leaderboard: leaderboard.slice(0, 100) };
 }
 
-export async function getDiversificationLeaderboard() {
+export async function getDiversificationLeaderboard({ userIds } = {}) {
   const result = await pool.query(
     `SELECT u.id AS "userId", u.username,
             COALESCE(COUNT(DISTINCT h.symbol), 0)::int AS "holdingCount"
      FROM users u
      LEFT JOIN holdings h ON h.user_id = u.id
+     WHERE ($1::int[] IS NULL OR u.id = ANY($1::int[]))
      GROUP BY u.id, u.username
-     ORDER BY "holdingCount" DESC, u.id ASC`
+     ORDER BY "holdingCount" DESC, u.id ASC`,
+    [userIds ?? null]
   );
   const leaderboard = result.rows.map((row, i) => ({ ...row, rank: i + 1 }));
   return { category: 'diversified', leaderboard: leaderboard.slice(0, 100) };

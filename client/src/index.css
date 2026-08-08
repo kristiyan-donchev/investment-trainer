@@ -1568,6 +1568,13 @@ input {
   border-radius: var(--radius-sm);
 }
 
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* Orders panel */
 .order-status {
   font-size: 12px;

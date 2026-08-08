@@ -100,6 +100,34 @@ const ACHIEVEMENTS = [
     icon: '🌱',
     evaluate: (ctx) => longTermHolderEarnedAt(ctx.transactions, ctx.holdingSymbols, Date.now()),
   },
+  {
+    id: 'challenger',
+    title: 'Challenger',
+    description: 'Complete your first challenge.',
+    icon: '🥊',
+    evaluate: (ctx) => ctx.challengeResults[0]?.endsAt ?? null,
+  },
+  {
+    id: 'podium-finish',
+    title: 'Podium Finish',
+    description: 'Finish top 3 in a challenge.',
+    icon: '🥉',
+    evaluate: (ctx) => ctx.challengeResults.find((r) => r.badge === 'WINNER' || r.badge === 'TOP_3')?.endsAt ?? null,
+  },
+  {
+    id: 'challenge-champion',
+    title: 'Challenge Champion',
+    description: 'Win a challenge outright.',
+    icon: '🏆',
+    evaluate: (ctx) => ctx.challengeResults.find((r) => r.badge === 'WINNER')?.endsAt ?? null,
+  },
+  {
+    id: 'challenge-regular',
+    title: 'Challenge Regular',
+    description: 'Complete 5 challenges.',
+    icon: '🔁',
+    evaluate: (ctx) => ctx.challengeResults[4]?.endsAt ?? null,
+  },
 ];
 
 // Reach #1 unlocks like a trophy — once earned it stays earned even if rank
@@ -123,7 +151,7 @@ async function topOfTheBoardEarnedAt(userId, isRankOneNow) {
 }
 
 export async function getAchievements(userId) {
-  const [transactionsResult, holdingsResult, leaderboard] = await Promise.all([
+  const [transactionsResult, holdingsResult, leaderboard, challengeResultsResult] = await Promise.all([
     pool.query(
       `SELECT symbol, type, timestamp, realized_pnl AS "realizedPnL" FROM transactions
        WHERE user_id = $1 ORDER BY timestamp ASC`,
@@ -131,11 +159,18 @@ export async function getAchievements(userId) {
     ),
     pool.query(`SELECT symbol FROM holdings WHERE user_id = $1`, [userId]),
     getLeaderboard('all').catch(() => ({ leaderboard: [] })),
+    pool.query(
+      `SELECT cp.badge, c.ends_at AS "endsAt" FROM challenge_participants cp
+       JOIN challenges c ON c.id = cp.challenge_id
+       WHERE cp.user_id = $1 AND cp.badge IS NOT NULL ORDER BY c.ends_at ASC`,
+      [userId]
+    ),
   ]);
 
   const ctx = {
     transactions: transactionsResult.rows,
     holdingSymbols: holdingsResult.rows.map((r) => r.symbol),
+    challengeResults: challengeResultsResult.rows,
   };
   const isRankOneNow = leaderboard.leaderboard.find((e) => e.userId === userId)?.rank === 1;
 

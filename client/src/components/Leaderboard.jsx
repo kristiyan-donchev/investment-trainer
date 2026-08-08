@@ -38,6 +38,7 @@ export default function Leaderboard() {
   const { user } = useAuth();
   const [category, setCategory] = useState('return');
   const [range, setRange] = useState('1mo');
+  const [scope, setScope] = useState('global');
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -48,7 +49,7 @@ export default function Leaderboard() {
     let cancelled = false;
     setLoading(true);
     setErrorMsg(null);
-    fetchLeaderboard(range, category)
+    fetchLeaderboard(range, category, scope)
       .then((d) => {
         if (!cancelled) setEntries(d.leaderboard || []);
       })
@@ -61,10 +62,25 @@ export default function Leaderboard() {
     return () => {
       cancelled = true;
     };
-  }, [range, category]);
+  }, [range, category, scope]);
 
   return (
     <div className="leaderboard">
+      <div className="range-tabs">
+        <button
+          className={scope === 'global' ? 'range-tab active' : 'range-tab'}
+          onClick={() => setScope('global')}
+        >
+          Global
+        </button>
+        <button
+          className={scope === 'friends' ? 'range-tab active' : 'range-tab'}
+          onClick={() => setScope('friends')}
+        >
+          Friends
+        </button>
+      </div>
+
       <div className="range-tabs category-tabs">
         {CATEGORIES.map((c) => (
           <button

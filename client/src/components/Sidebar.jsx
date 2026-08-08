@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import ProfileMenu from './ProfileMenu.jsx';
-import { fetchUnseenAlertCount } from '../lib/api.js';
+import { fetchUnseenAlertCount, fetchUnseenFriendRequestCount } from '../lib/api.js';
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: '📊' },
   { key: 'learn', label: 'Learn', icon: '🎓' },
   { key: 'watchlist', label: 'Watchlist', icon: '👁️' },
   { key: 'leaderboard', label: 'Leaderboard', icon: '🏆' },
+  { key: 'challenges', label: 'Challenges', icon: '🎯' },
+  { key: 'friends', label: 'Friends', icon: '🧑‍🤝‍🧑' },
 ];
 
-const UNSEEN_ALERT_POLL_MS = 30000;
+const UNSEEN_POLL_MS = 30000;
 
 export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
   const [unseenAlerts, setUnseenAlerts] = useState(0);
+  const [unseenRequests, setUnseenRequests] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,9 +25,14 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
           if (!cancelled) setUnseenAlerts(count);
         })
         .catch(() => {});
+      fetchUnseenFriendRequestCount()
+        .then((count) => {
+          if (!cancelled) setUnseenRequests(count);
+        })
+        .catch(() => {});
     }
     poll();
-    const interval = setInterval(poll, UNSEEN_ALERT_POLL_MS);
+    const interval = setInterval(poll, UNSEEN_POLL_MS);
     return () => {
       cancelled = true;
       clearInterval(interval);
@@ -54,6 +62,9 @@ export default function Sidebar({ page, onNavigate, onShowHelp, onReset }) {
             <span className="sidebar-nav-label">{item.label}</span>
             {item.key === 'watchlist' && unseenAlerts > 0 && (
               <span className="sidebar-nav-badge">{unseenAlerts}</span>
+            )}
+            {item.key === 'friends' && unseenRequests > 0 && (
+              <span className="sidebar-nav-badge">{unseenRequests}</span>
             )}
           </button>
         ))}

@@ -11,6 +11,7 @@ import {
   getBiggestWinLeaderboard,
   getDiversificationLeaderboard,
 } from '../lib/portfolio.js';
+import { getFriendIds } from '../lib/friends.js';
 
 const router = Router();
 
@@ -42,10 +43,14 @@ router.get('/leaderboard', async (req, res) => {
   const range = PERFORMANCE_RANGES.includes(req.query.range) ? req.query.range : '1mo';
   const category = LEADERBOARD_CATEGORIES.includes(req.query.category) ? req.query.category : 'return';
   try {
-    if (category === 'active') return res.json(await getMostActiveLeaderboard(range));
-    if (category === 'biggest_win') return res.json(await getBiggestWinLeaderboard(range));
-    if (category === 'diversified') return res.json(await getDiversificationLeaderboard());
-    res.json({ ...(await getLeaderboard(range)), category: 'return' });
+    let userIds = null;
+    if (req.query.scope === 'friends') {
+      userIds = [...(await getFriendIds(req.userId)), req.userId];
+    }
+    if (category === 'active') return res.json(await getMostActiveLeaderboard(range, { userIds }));
+    if (category === 'biggest_win') return res.json(await getBiggestWinLeaderboard(range, { userIds }));
+    if (category === 'diversified') return res.json(await getDiversificationLeaderboard({ userIds }));
+    res.json({ ...(await getLeaderboard(range, { userIds })), category: 'return' });
   } catch (err) {
     console.error('leaderboard error', err.message);
     res.status(502).json({ error: 'Could not load the leaderboard right now.' });

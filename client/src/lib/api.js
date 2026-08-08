@@ -90,9 +90,9 @@ export function fetchPerformance(range = '1mo') {
   return getJson(`${BASE}/portfolio/performance?range=${encodeURIComponent(range)}`);
 }
 
-export function fetchLeaderboard(range = '1mo', category = 'return') {
+export function fetchLeaderboard(range = '1mo', category = 'return', scope = 'global') {
   return getJson(
-    `${BASE}/portfolio/leaderboard?range=${encodeURIComponent(range)}&category=${encodeURIComponent(category)}`
+    `${BASE}/portfolio/leaderboard?range=${encodeURIComponent(range)}&category=${encodeURIComponent(category)}&scope=${encodeURIComponent(scope)}`
   );
 }
 
@@ -150,4 +150,44 @@ export function updatePassword({ currentPassword, newPassword }) {
 
 export function deleteAccount(confirmUsername) {
   return postJson(`${BASE}/auth/delete`, { confirmUsername });
+}
+
+export function fetchFriends() {
+  return getJson(`${BASE}/friends`);
+}
+
+export function fetchUnseenFriendRequestCount() {
+  return getJson(`${BASE}/friends/unseen-count`).then((d) => d.count || 0);
+}
+
+export function sendFriendRequest(username) {
+  return postJson(`${BASE}/friends/requests`, { username });
+}
+
+export function acceptFriendRequest(id) {
+  return postJson(`${BASE}/friends/requests/${id}/accept`, {});
+}
+
+export function declineFriendRequest(id) {
+  return deleteJson(`${BASE}/friends/requests/${id}`);
+}
+
+export function unfriend(userId) {
+  return deleteJson(`${BASE}/friends/${userId}`);
+}
+
+export function fetchChallenges() {
+  return getJson(`${BASE}/challenges`);
+}
+
+export function createChallenge({ title, description, durationDays }) {
+  return postJson(`${BASE}/challenges`, { title, description, durationDays });
+}
+
+export function joinChallenge(id) {
+  return postJson(`${BASE}/challenges/${id}/join`, {});
+}
+
+export function fetchChallengeStandings(id) {
+  return getJson(`${BASE}/challenges/${id}/standings`);
 }

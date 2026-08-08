@@ -73,13 +73,27 @@ export async function updatePasswordHash(userId, passwordHash) {
   await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, userId]);
 }
 
-// Deletes a user and everything scoped to them. Holdings/transactions have no
-// ON DELETE CASCADE, so they're removed manually in the same transaction —
-// mirrors resetPortfolio()'s cleanup in lib/portfolio.js.
+// Deletes a user and everything scoped to them. None of these tables have
+// ON DELETE CASCADE, so every one of them must be cleared manually in the
+// same transaction before the users row itself — otherwise deletion throws a
+// foreign-key violation for any user who has ever done the thing that table
+// tracks (watchlist/price_alerts/orders/achievement_unlocks were previously
+// missing here entirely, which meant deleting an account with any of those
+// failed; confirmed by reproducing it against a user with an earned
+// achievement while building the friends/challenges feature below).
+// challenges.created_by is nullable specifically so a challenge other users
+// have joined survives its creator's account being deleted.
 export async function deleteAccount(userId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+    await client.query(`DELETE FROM watchlist WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM price_alerts WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM orders WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM achievement_unlocks WHERE user_id = $1`, [userId]);
+    await client.query(`DELETE FROM friend_requests WHERE requester_id = $1 OR recipient_id = $1`, [userId]);
+    await client.query(`DELETE FROM challenge_participants WHERE user_id = $1`, [userId]);
+    await client.query(`UPDATE challenges SET created_by = NULL WHERE created_by = $1`, [userId]);
     await client.query(`DELETE FROM transactions WHERE user_id = $1`, [userId]);
     await client.query(`DELETE FROM holdings WHERE user_id = $1`, [userId]);
     await client.query(`DELETE FROM users WHERE id = $1`, [userId]);

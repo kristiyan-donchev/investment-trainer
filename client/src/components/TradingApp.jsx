@@ -5,6 +5,8 @@ import DashboardPage from './DashboardPage.jsx';
 import LeaderboardPage from './LeaderboardPage.jsx';
 import WatchlistPage from './WatchlistPage.jsx';
 import LearnPage from './LearnPage.jsx';
+import FriendsPage from './FriendsPage.jsx';
+import ChallengesPage from './ChallengesPage.jsx';
 import AdSlot from './AdSlot.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
@@ -28,6 +30,14 @@ const PAGE_META = {
   learn: {
     title: 'Learn',
     subtitle: 'Beginner-friendly explanations of how investing and this simulator work.',
+  },
+  friends: {
+    title: 'Friends',
+    subtitle: 'Add friends to compare portfolios and challenge each other.',
+  },
+  challenges: {
+    title: 'Challenges',
+    subtitle: 'Time-boxed ROI competitions with your friends — badges for participating and winning.',
   },
 };
 
@@ -140,6 +150,8 @@ export default function TradingApp() {
               {page === 'leaderboard' && <LeaderboardPage />}
               {page === 'watchlist' && <WatchlistPage onSelectSymbol={handleSelectFromWatchlist} />}
               {page === 'learn' && <LearnPage />}
+              {page === 'friends' && <FriendsPage />}
+              {page === 'challenges' && <ChallengesPage />}
             </div>
 
             <footer className="app-footer">

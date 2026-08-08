@@ -116,5 +116,49 @@ export async function initSchema() {
       earned_at BIGINT NOT NULL,
       PRIMARY KEY (user_id, achievement_id)
     );
+
+    -- One row per friend pair regardless of direction (enforced by the
+    -- LEAST/GREATEST unique index below). Decline/unfriend are hard deletes —
+    -- no DECLINED status — so re-requesting after a decline just works.
+    CREATE TABLE IF NOT EXISTS friend_requests (
+      id SERIAL PRIMARY KEY,
+      requester_id INTEGER NOT NULL REFERENCES users(id),
+      recipient_id INTEGER NOT NULL REFERENCES users(id),
+      status TEXT NOT NULL DEFAULT 'PENDING', -- 'PENDING' | 'ACCEPTED'
+      created_at BIGINT NOT NULL,
+      responded_at BIGINT,
+      CHECK (requester_id <> recipient_id)
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_friend_pair
+      ON friend_requests (LEAST(requester_id, recipient_id), GREATEST(requester_id, recipient_id));
+    CREATE INDEX IF NOT EXISTS idx_friend_requests_recipient ON friend_requests(recipient_id, status);
+
+    -- Time-boxed ROI competitions among a creator's friends. starts_at is
+    -- always the creation time (no future scheduling); finalized_at stays
+    -- NULL until results are computed once and locked in (see
+    -- lib/challenges.js) — trading continues after ends_at, so standings
+    -- can't just be derived fresh on every read like achievements are.
+    CREATE TABLE IF NOT EXISTS challenges (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT,
+      starts_at BIGINT NOT NULL,
+      ends_at BIGINT NOT NULL,
+      created_by INTEGER REFERENCES users(id), -- nullable: creator's account may later be deleted
+      created_at BIGINT NOT NULL,
+      finalized_at BIGINT
+    );
+    CREATE INDEX IF NOT EXISTS idx_challenges_ends_at ON challenges(ends_at) WHERE finalized_at IS NULL;
+
+    CREATE TABLE IF NOT EXISTS challenge_participants (
+      challenge_id INTEGER NOT NULL REFERENCES challenges(id),
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      joined_at BIGINT NOT NULL,
+      final_rank INTEGER,
+      final_roi_percent DOUBLE PRECISION,
+      badge TEXT, -- NULL until finalized, then 'WINNER' | 'TOP_3' | 'PARTICIPANT'
+      PRIMARY KEY (challenge_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_challenge_participants_user ON challenge_participants(user_id);
   `);
 }

@@ -9,10 +9,13 @@ import watchlistRouter from './routes/watchlist.js';
 import alertsRouter from './routes/alerts.js';
 import ordersRouter from './routes/orders.js';
 import achievementsRouter from './routes/achievements.js';
+import friendsRouter from './routes/friends.js';
+import challengesRouter from './routes/challenges.js';
 import { initSchema } from './db.js';
 import { getPrices } from './lib/quotes.js';
 import { getActiveAlertSymbols, processAlerts } from './lib/alerts.js';
 import { getPendingOrderSymbols, processOrders } from './lib/orders.js';
+import { getChallengesDueForFinalization, finalizeChallenge } from './lib/challenges.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -29,6 +32,8 @@ app.use('/api/watchlist', watchlistRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/achievements', achievementsRouter);
+app.use('/api/friends', friendsRouter);
+app.use('/api/challenges', challengesRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
@@ -58,12 +63,35 @@ function scheduleMarketChecks() {
   setInterval(runMarketChecks, MARKET_CHECK_INTERVAL_MS);
 }
 
+// Challenge standings are computed once and locked in at ends_at, since
+// trading continues afterward and a live recompute would keep shifting who
+// "won" — this periodically finalizes any that have ended but not yet been
+// scored. Not price-sensitive like market checks, so a coarser interval is
+// fine; standings routes also finalize lazily on read to close the gap
+// before this next runs.
+const CHALLENGE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
+
+async function runChallengeChecks() {
+  try {
+    const dueIds = await getChallengesDueForFinalization();
+    for (const id of dueIds) await finalizeChallenge(id);
+  } catch (err) {
+    console.error('Challenge finalization failed:', err.message);
+  }
+}
+
+function scheduleChallengeChecks() {
+  runChallengeChecks();
+  setInterval(runChallengeChecks, CHALLENGE_CHECK_INTERVAL_MS);
+}
+
 initSchema()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`TradeScrim server listening on http://localhost:${PORT}`);
     });
     scheduleMarketChecks();
+    scheduleChallengeChecks();
   })
   .catch((err) => {
     console.error('Failed to initialize the database schema:', err.message);
