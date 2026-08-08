@@ -9,6 +9,7 @@ import FriendsPage from './FriendsPage.jsx';
 import ChallengesPage from './ChallengesPage.jsx';
 import NewsPage from './NewsPage.jsx';
 import AdSlot from './AdSlot.jsx';
+import LoadingScreen from './LoadingScreen.jsx';
 import { usePortfolio } from '../hooks/usePortfolio.js';
 import { fetchQuote } from '../lib/api.js';
 
@@ -106,11 +107,7 @@ export default function TradingApp() {
   }
 
   if (loading) {
-    return (
-      <div className="app">
-        <p className="empty-state">Loading your portfolio…</p>
-      </div>
-    );
+    return <LoadingScreen label="Loading your portfolio" />;
   }
 
   const holdingsValue = Object.values(state.holdings).reduce((sum, h) => {
